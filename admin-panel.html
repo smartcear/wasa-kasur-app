@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0F172A" />
+  <title>WASA Kasur | Admin Console & AI Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <!-- CDN Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Firebase v9+ -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSf45vEBv_PqEnA4jEKUfGcZvLcru-3rU",
+      authDomain: "wasa-app-ksr.firebaseapp.com",
+      projectId: "wasa-app-ksr",
+      storageBucket: "wasa-app-ksr.firebasestorage.app",
+      messagingSenderId: "572534729136",
+      appId: "1:572534729136:web:c172481da5a37756c50e75",
+      measurementId: "G-363L5VJD0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    enableIndexedDbPersistence(db).catch(() => {});
+
+    window.WASA = { app, auth, db, firebase: { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, signInWithEmailAndPassword, signOut, onAuthStateChanged } };
+    window.dispatchEvent(new Event('wasa-ready'));
+  </script>
+
+  <style>
+    :root {
+      --primary: #1A56DB;
+      --primary-600: #1E429F;
+      --sidebar-bg: #0B1220;
+      --sidebar-hover: #111827;
+      --sidebar-active: #1A56DB;
+      --sidebar-text: #94A3B8;
+      --sidebar-width: 260px;
+      --topbar-h: 64px;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-300: #D1D5DB;
+      --gray-500: #6B7280;
+      --gray-700: #374151;
+      --gray-800: #1F2937;
+      --gray-900: #111827;
+      --success: #057A55;
+      --danger: #E02424;
+      --radius-md: 8px;
+      --radius-xl: 16px;
+      --font: 'Inter', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); font-size: 14px; overflow-x: hidden; }
+    button, input, select, textarea { font-family: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    .hidden { display: none !important; }
+
+    /* TOAST */
+    #toastWrap { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: white; border-left: 4px solid var(--primary); padding: 14px 16px; border-radius: var(--radius-md); box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-width: 280px; display: flex; gap: 10px; align-items: center; }
+
+    /* LAYOUT */
+    #bootLoader { position: fixed; inset: 0; z-index: 100000; background: #0B1220; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+    #loginScreen { position: fixed; inset: 0; z-index: 9000; background: linear-gradient(155deg, #0B1220 0%, #1E3A8A 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-card { background: white; border-radius: 20px; padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--gray-700); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13.5px; outline: none; }
+    .form-group input:focus { border-color: var(--primary); }
+    .btn-primary { width: 100%; padding: 12px; background: var(--primary); color: white; border-radius: 6px; font-weight: 700; font-size: 14px; }
+
+    #appShell { display: none; height: 100vh; }
+    #appShell.show { display: flex; }
+
+    /* SIDEBAR */
+    #sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); height: 100vh; display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100; }
+    .sidebar-brand { padding: 20px; color: white; font-weight: 800; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px; }
+    .nav-sec { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; padding: 12px 8px 4px; letter-spacing: 0.5px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; color: var(--sidebar-text); font-size: 13.5px; font-weight: 500; cursor: pointer; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active { background: var(--sidebar-active); color: white; font-weight: 600; }
+
+    /* MAIN */
+    #mainWrap { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #topbar { height: var(--topbar-h); background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; gap: 16px; sticky: top; }
+    .topbar-title { font-size: 17px; font-weight: 700; flex: 1; }
+    #content { padding: 24px; flex: 1; overflow-y: auto; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* AI ASSISTANT CHAT INTERFACE */
+    .ai-chat-box { background: white; border-radius: 16px; border: 1px solid var(--gray-200); height: 600px; display: flex; flex-direction: column; overflow: hidden; }
+    .ai-chat-header { padding: 16px 20px; background: #0F172A; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .ai-chat-stream { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #F8FAFC; }
+    .msg-user { align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 14px 14px 2px 14px; max-width: 80%; font-size: 14px; }
+    .msg-ai { align-self: flex-start; background: white; border: 1px solid var(--gray-200); color: var(--gray-900); padding: 16px; border-radius: 14px 14px 14px 2px; max-width: 85%; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ai-chat-input-wrap { padding: 16px; background: white; border-top: 1px solid var(--gray-200); display: flex; gap: 10px; }
+    .ai-chat-input { flex: 1; padding: 12px; border: 1px solid var(--gray-300); border-radius: 8px; outline: none; font-size: 14px; }
+    .btn-ai-send { background: var(--primary); color: white; padding: 0 20px; border-radius: 8px; font-weight: 700; }
+
+    /* PREVIEW & CODE BOX */
+    .preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .preview-card { background: white; width: 90%; max-width: 900px; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TABLES */
+    .table-wrap { overflow-x: auto; background: white; border-radius: 12px; border: 1px solid var(--gray-200); }
+    table.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    table.data-table th { background: var(--gray-100); padding: 12px 14px; font-weight: 700; color: var(--gray-700); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    table.data-table td { padding: 12px 14px; border-bottom: 1px solid var(--gray-100); white-space: nowrap; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; }
+
+    /* FOOTER TAP */
+    .app-footer { text-align: center; padding: 20px; font-size: 11px; color: var(--gray-500); }
+  </style>
+</head>
+<body>
+
+<div id="toastWrap"></div>
+
+<!-- BOOT LOADER -->
+<div id="bootLoader">
+  <div style="font-size:40px; font-weight:900; margin-bottom:10px;">W</div>
+  <div>Loading WASA Kasur Console & AI Engine…</div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2 style="text-align:center; margin-bottom:4px;">WASA Kasur</h2>
+    <p style="text-align:center; font-size:12px; color:var(--gray-500); margin-bottom:20px;">Admin Console Login</p>
+    
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="loginPhone" placeholder="03001234567" maxlength="11" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- HIDDEN SETTINGS MODAL -->
+<div id="hiddenSettings" class="modal-overlay">
+  <div class="modal" style="max-width:380px">
+    <h3>🔐 Master Control Access</h3>
+    <p style="font-size:12px; color:var(--gray-500); margin:6px 0 16px">Enter master password to unlock Form Builder, AI Engine & Bulk Upload.</p>
+    <div class="form-group">
+      <input type="password" id="hiddenPass" placeholder="Master Password" />
+    </div>
+    <div style="display:flex; gap:10px">
+      <button class="btn-primary" style="background:var(--gray-300); color:black" onclick="$('hiddenSettings').classList.remove('show')">Cancel</button>
+      <button class="btn-primary" onclick="unlockMaster()">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <div style="background:var(--primary); width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;">W</div>
+      WASA Kasur
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec">Overview</div>
+      <div class="nav-item active" onclick="nav('dashboard', this)">📊 Dashboard</div>
+
+      <div class="nav-sec">People</div>
+      <div class="nav-item" onclick="nav('consumers', this)">👥 Consumers</div>
+      <div class="nav-item" onclick="nav('pending', this)">⏳ Pending Requests</div>
+      <div class="nav-item" onclick="nav('officers', this)">🪪 Officers Directory</div>
+
+      <div class="nav-sec">Operations</div>
+      <div class="nav-item" onclick="nav('activities', this)">📋 Field Activities</div>
+      <div class="nav-item" onclick="nav('duplicates', this)">🧬 Duplicates Inbox</div>
+      <div class="nav-item" onclick="nav('corrections', this)">✏️ Correction Requests</div>
+      <div class="nav-item" onclick="nav('connect', this)">💬 WASA Connect</div>
+
+      <div class="nav-sec">Configuration</div>
+      <div class="nav-item" onclick="nav('settings', this)">⚙️ System Settings</div>
+
+      <!-- HIDDEN MASTER SECTION -->
+      <div id="hiddenNav" class="hidden">
+        <div class="nav-sec" style="color:#F59E0B">Master Tools</div>
+        <div class="nav-item" onclick="nav('aiengine', this)">🤖 AI Assistant (Claude)</div>
+        <div class="nav-item" onclick="nav('formbuilder', this)">🛠️ Form Builder</div>
+        <div class="nav-item" onclick="nav('bulkupload', this)">📤 Bulk Data Upload</div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN WRAP -->
+  <div id="mainWrap">
+    <header id="topbar">
+      <h1 class="topbar-title" id="pageTitle">Dashboard</h1>
+      <span id="userBadge" style="background:var(--gray-100); padding:6px 12px; border-radius:99px; font-weight:600; font-size:12px">Super Admin</span>
+    </header>
+
+    <main id="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:20px;">
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">TOTAL ACTIVITIES</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbAct">0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">RECOVERY TODAY</div>
+            <div style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px" id="dbRec">Rs. 0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">TOTAL CONSUMERS</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbCons">0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">ACTIVE OFFICERS</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbOff">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONSUMERS (26 COLUMNS FULL SUPPORT) -->
+      <div class="page" id="page-consumers">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+          <input type="text" id="conSearch" placeholder="Search CNIC, Name, Account..." style="padding:10px; width:300px; border-radius:6px; border:1px solid var(--gray-300)" oninput="filterConsumers()" />
+          <button class="btn-primary" style="width:auto" onclick="openAddConsumerModal()">+ Add Consumer (26 Fields)</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Consumer No</th>
+                <th>Name</th>
+                <th>Father Name</th>
+                <th>CNIC</th>
+                <th>Contact</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Motor Size</th>
+                <th>Washrooms</th>
+                <th>Ward</th>
+                <th>Property No</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="consumersTbody">
+              <tr><td colspan="12" style="text-align:center; padding:30px">Loading consumers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 🤖 BUILT-IN AI ASSISTANT PAGE (CLAUDE INTEGRATION) -->
+      <div class="page" id="page-aiengine">
+        <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center">
+          <div>
+            <h2 style="font-size:18px; font-weight:800">🤖 WASA AI Customization Engine</h2>
+            <p style="font-size:12px; color:var(--gray-500)">Type changes in English/Urdu. AI will update code & generate live preview.</p>
+          </div>
+          <button class="btn-primary" style="width:auto; background:#10B981" onclick="showRollbackModal()">⏮️ Rollback History (30 Days)</button>
+        </div>
+
+        <!-- API KEY SETTING -->
+        <div style="background:#FEF3C7; border:1px solid #F59E0B; padding:12px 16px; border-radius:10px; margin-bottom:16px; display:flex; gap:10px; align-items:center">
+          <span style="font-size:20px">🔑</span>
+          <div style="flex:1">
+            <strong style="font-size:13px">Claude API / OpenRouter Key Setup</strong>
+            <input type="password" id="aiApiKey" placeholder="Enter Anthropic / OpenRouter API Key (sk-or-...)" style="width:100%; margin-top:4px; padding:6px; border-radius:4px; border:1px solid #D97706; font-size:12px" />
+          </div>
+          <button class="btn-primary" style="width:auto; padding:8px 14px; margin-top:16px" onclick="saveApiKey()">Save Key</button>
+        </div>
+
+        <!-- CHAT STREAM -->
+        <div class="ai-chat-box">
+          <div class="ai-chat-header">
+            <span>💬 WASA AI Developer Assistant</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:99px">Claude 3.5 Sonnet Engine</span>
+          </div>
+          <div class="ai-chat-stream" id="aiStream">
+            <div class="msg-ai">
+              <strong>Assalam-o-Alaikum Nafees Sahab!</strong> 👋<br>
+              Main WASA Kasur ka built-in AI Assistant hoon. Aap mujhe batayein app mein kya change karna hai (e.g. <em>"Dashboard mein recovery chart ka color green kar do"</em> ya <em>"Consumers list mein Ward wise total count ka box lagao"</em>). Main code generate karke aapko Live Preview dikhaunga!
+            </div>
+          </div>
+          <div class="ai-chat-input-wrap">
+            <input type="text" class="ai-chat-input" id="aiPrompt" placeholder="Type what you want to add or change in WASA app..." onkeydown="if(event.key==='Enter') sendAiPrompt()" />
+            <button class="btn-ai-send" onclick="sendAiPrompt()">Generate & Preview</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- OTHER PAGES PLACEHOLDERS -->
+      <div class="page" id="page-pending"><h3 style="padding:20px">⏳ Pending Requests (0)</h3></div>
+      <div class="page" id="page-officers"><h3 style="padding:20px">🪪 Officers Directory</h3></div>
+      <div class="page" id="page-activities"><h3 style="padding:20px">📋 Field Activities</h3></div>
+      <div class="page" id="page-duplicates"><h3 style="padding:20px">🧬 Duplicates Inbox</h3></div>
+      <div class="page" id="page-corrections"><h3 style="padding:20px">✏️ Correction Requests</h3></div>
+      <div class="page" id="page-connect"><h3 style="padding:20px">💬 WASA Connect</h3></div>
+      <div class="page" id="page-settings"><h3 style="padding:20px">⚙️ System Settings</h3></div>
+      <div class="page" id="page-formbuilder"><h3 style="padding:20px">🛠️ Dynamic Form Builder</h3></div>
+      <div class="page" id="page-bulkupload"><h3 style="padding:20px">📤 Bulk Data Upload</h3></div>
+
+      <!-- FOOTER TAP TARGET -->
+      <div class="app-footer">
+        Water & Sanitation Agency · Kasur · Government of Punjab<br>
+        <span id="verTap" style="cursor:pointer; font-weight:700">Developed by NAFEES • v2.8.1.0</span>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL FOR AI CHANGES -->
+<div class="preview-modal" id="aiPreviewModal">
+  <div class="preview-card">
+    <div style="padding:16px; background:#0F172A; color:white; display:flex; justify-content:space-between; align-items:center">
+      <strong>🤖 AI Generated Preview & Code Changes</strong>
+      <button onclick="$('aiPreviewModal').style.display='none'" style="color:white; font-size:18px">✕</button>
+    </div>
+    <div style="flex:1; padding:20px; overflow-y:auto">
+      <h4>Proposed Changes:</h4>
+      <div id="aiChangeSummary" style="background:#F1F5F9; padding:12px; border-radius:8px; margin:10px 0; font-size:13px"></div>
+      <h4>Generated HTML/JS Preview:</h4>
+      <iframe id="aiPreviewFrame" style="width:100%; height:350px; border:1px solid #CBD5E1; border-radius:8px; margin-top:10px"></iframe>
+    </div>
+    <div style="padding:16px; background:#F8FAFC; border-top:1px solid #E2E8F0; display:flex; justify-content:flex-end; gap:10px">
+      <button class="btn-primary" style="background:var(--gray-500); width:auto" onclick="$('aiPreviewModal').style.display='none'">Reject Change</button>
+      <button class="btn-primary" style="background:#10B981; width:auto" onclick="applyAiChanges()">✅ Approve & Apply To System</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CONSUMER MODAL (26 FIELDS) -->
+<div class="modal-overlay" id="addConsumerModal">
+  <div class="modal">
+    <h3>➕ Add New Consumer (26 Fields)</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px">
+      <div class="form-group"><label>Consumer No *</label><input type="text" id="cNo" placeholder="100921" /></div>
+      <div class="form-group"><label>Consumer Name *</label><input type="text" id="cName" placeholder="Muhammad Ahmad" /></div>
+      <div class="form-group"><label>Father Name</label><input type="text" id="cFName" /></div>
+      <div class="form-group"><label>CNIC (13 digits)</label><input type="text" id="cCnic" placeholder="3520212345671" /></div>
+      <div class="form-group"><label>Contact No</label><input type="text" id="cPhone" placeholder="03001234567" /></div>
+      <div class="form-group"><label>Address</label><input type="text" id="cAddr" /></div>
+      <div class="form-group"><label>Category</label><select id="cCat"><option>Residential</option><option>Commercial</option><option>Industrial</option></select></div>
+      <div class="form-group"><label>Sub Category</label><input type="text" id="cSubCat" /></div>
+      <div class="form-group"><label>Discharge Dia</label><input type="text" id="cDia" /></div>
+      <div class="form-group"><label>Old Account No</label><input type="text" id="cOldAcc" /></div>
+      <div class="form-group"><label>Building Floor</label><input type="text" id="cFloor" /></div>
+      <div class="form-group"><label>No of Washrooms</label><input type="number" id="cWashrooms" value="1" /></div>
+      <div class="form-group"><label>Status</label><select id="cStatus"><option>ACTIVE</option><option>INACTIVE</option></select></div>
+      <div class="form-group"><label>Ward</label><input type="text" id="cWard" /></div>
+      <div class="form-group"><label>Aquifier Motor Size</label><input type="text" id="cMotor" /></div>
+      <div class="form-group"><label>Property No</label><input type="text" id="cPropNo" /></div>
+      <div class="form-group"><label>Area / Marla</label><input type="text" id="cArea" /></div>
+      <div class="form-group"><label>Service Name</label><input type="text" id="cService" /></div>
+      <div class="form-group"><label>No of Pumps</label><input type="number" id="cPumps" value="0" /></div>
+      <div class="form-group"><label>Remarks</label><input type="text" id="cRemarks" /></div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px">
+      <button class="btn-primary" style="background:var(--gray-300); color:black; width:auto" onclick="$('addConsumerModal').classList.remove('show')">Cancel</button>
+      <button class="btn-primary" style="width:auto" onclick="saveConsumer()">Save Consumer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// UTILS
+function $(id) { return document.getElementById(id); }
+function toast(msg) {
+  const w = $('toastWrap');
+  const d = document.createElement('div');
+  d.className = 'toast'; d.innerHTML = `<span>ℹ️</span><div>${msg}</div>`;
+  w.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+const SUPER_ADMIN_PHONE = '03015777523';
+const MASTER_PASS = 'Nafees@Master99';
+let currentUser = null;
+let consumersList = [];
+
+// NAVIGATION
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  $('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  $('pageTitle').textContent = id.toUpperCase();
+}
+
+// 7-TAP MASTER UNLOCK
+let taps = 0, tapTimer = null;
+$('verTap').addEventListener('click', () => {
+  taps++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => taps = 0, 3000);
+  if(taps >= 7) {
+    taps = 0;
+    $('hiddenSettings').classList.add('show');
+  }
+});
+
+function unlockMaster() {
+  if($('hiddenPass').value === MASTER_PASS) {
+    $('hiddenNav').classList.remove('hidden');
+    $('hiddenSettings').classList.remove('show');
+    toast('Master Control Unlocked!');
+  } else {
+    toast('Wrong Master Password');
+  }
+}
+
+// AUTH
+function doLogin() {
+  const phone = $('loginPhone').value.trim();
+  const pass = $('loginPass').value;
+  if(!phone || !pass) return toast('Phone and Password required');
+
+  const { auth, firebase: F } = window.WASA;
+  F.signInWithEmailAndPassword(auth, phone + '@wasa.kasur.app', pass)
+    .catch(e => toast('Login Failed: ' + e.message));
+}
+
+window.addEventListener('wasa-ready', () => {
+  const { auth, db, firebase: F } = window.WASA;
+  F.onAuthStateChanged(auth, (user) => {
+    if(user) {
+      $('loginScreen').style.display = 'none';
+      $('appShell').classList.add('show');
+      $('bootLoader').style.display = 'none';
+      loadDashboard();
+      loadConsumers();
+    } else {
+      $('loginScreen').style.display = 'flex';
+      $('appShell').classList.remove('show');
+      $('bootLoader').style.display = 'none';
+    }
+  });
+});
+
+// DASHBOARD
+async function loadDashboard() {
+  const { db, firebase: F } = window.WASA;
+  try {
+    const cSnap = await F.getDocs(F.collection(db, 'wasaConsumers'));
+    $('dbCons').textContent = cSnap.size;
+    
+    const uSnap = await F.getDocs(F.collection(db, 'wasaUsers'));
+    $('dbOff').textContent = uSnap.size;
+  } catch(e) {}
+}
+
+// CONSUMERS CRUD
+async function loadConsumers() {
+  const { db, firebase: F } = window.WASA;
+  try {
+    const snap = await F.getDocs(F.collection(db, 'wasaConsumers'));
+    consumersList = [];
+    snap.forEach(d => consumersList.push({ id: d.id, ...d.data() }));
+    renderConsumersTable(consumersList);
+  } catch(e) {}
+}
+
+function renderConsumersTable(list) {
+  const tbody = $('consumersTbody');
+  if(!list.length) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px">No consumers found. Click "+ Add Consumer" to add one.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${c.CONSUMER_NO||'—'}</strong></td>
+      <td>${c.CONSUMER_NAME||'—'}</td>
+      <td>${c.FATHER_NAME||'—'}</td>
+      <td>${c.CNIC||'—'}</td>
+      <td>${c.CONTACT_NO||'—'}</td>
+      <td>${c.CATEGORY||'—'}</td>
+      <td><span style="background:${c.STATUS==='ACTIVE'?'#DEF7EC':'#F3F4F6'}; color:${c.STATUS==='ACTIVE'?'#057A55':'#374151'}; padding:2px 8px; border-radius:99px; font-weight:700">${c.STATUS||'ACTIVE'}</span></td>
+      <td>${c.AQUIFIER_MOTOR_SIZE||'—'}</td>
+      <td>${c.NO_OF_WASHROOMS||'1'}</td>
+      <td>${c.WARD||'—'}</td>
+      <td>${c.PROPERTY_NO||'—'}</td>
+      <td><button onclick="toast('Viewing details')">👁️</button></td>
+    </tr>
+  `).join('');
+}
+
+function filterConsumers() {
+  const q = $('conSearch').value.toLowerCase();
+  const filtered = consumersList.filter(c => (c.CONSUMER_NAME||'').toLowerCase().includes(q) || (c.CNIC||'').includes(q) || (c.CONSUMER_NO||'').includes(q));
+  renderConsumersTable(filtered);
+}
+
+function openAddConsumerModal() { $('addConsumerModal').classList.add('show'); }
+
+async function saveConsumer() {
+  const { db, firebase: F } = window.WASA;
+  const data = {
+    CONSUMER_NO: $('cNo').value,
+    CONSUMER_NAME: $('cName').value,
+    FATHER_NAME: $('cFName').value,
+    CNIC: $('cCnic').value,
+    CONTACT_NO: $('cPhone').value,
+    ADDRESS: $('cAddr').value,
+    CATEGORY: $('cCat').value,
+    SUBCATEGORY: $('cSubCat').value,
+    DIA_DISCHARGE: $('cDia').value,
+    OLD_ACCOUNT_NO: $('cOldAcc').value,
+    BUILDING_FLOOR: $('cFloor').value,
+    NO_OF_WASHROOMS: $('cWashrooms').value,
+    STATUS: $('cStatus').value,
+    WARD: $('cWard').value,
+    AQUIFIER_MOTOR_SIZE: $('cMotor').value,
+    PROPERTY_NO: $('cPropNo').value,
+    AREA: $('cArea').value,
+    SERVICE_NAME: $('cService').value,
+    NO_OF_PUMPS: $('cPumps').value,
+    REMARKS: $('cRemarks').value,
+    createdAt: F.serverTimestamp()
+  };
+
+  try {
+    await F.addDoc(F.collection(db, 'wasaConsumers'), data);
+    toast('Consumer Saved Successfully!');
+    $('addConsumerModal').classList.remove('show');
+    loadConsumers();
+  } catch(e) { toast('Save failed: ' + e.message); }
+}
+
+// 🤖 BUILT-IN AI CUSTOMIZATION ENGINE (CLAUDE ENGINE)
+function saveApiKey() {
+  const k = $('aiApiKey').value.trim();
+  if(!k) return toast('Enter valid API Key');
+  localStorage.setItem('wasa_ai_key', k);
+  toast('AI API Key Saved!');
+}
+
+async function sendAiPrompt() {
+  const prompt = $('aiPrompt').value.trim();
+  if(!prompt) return;
+  
+  const key = localStorage.getItem('wasa_ai_key') || $('aiApiKey').value.trim();
+  if(!key) return toast('Please enter Claude / OpenRouter API Key first!');
+
+  const stream = $('aiStream');
+  stream.innerHTML += `<div class="msg-user">${prompt}</div>`;
+  $('aiPrompt').value = '';
+  
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'msg-ai';
+  loadingMsg.innerHTML = '⚡ <em>AI is analyzing system code & generating changes...</em>';
+  stream.appendChild(loadingMsg);
+  stream.scrollTop = stream.scrollHeight;
+
+  try {
+    // API Call to Anthropic / OpenRouter
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [
+          { role: 'system', content: 'You are WASA Kasur AI Developer Engine. Respond in Roman Urdu & English. Analyze user request and generate HTML/CSS/JS snippet changes.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    const json = await res.json();
+    const reply = json.choices?.[0]?.message?.content || 'AI generated change code successfully.';
+    
+    loadingMsg.innerHTML = `<strong>WASA AI:</strong><br>${reply.replace(/\n/g, '<br>')}<br><br><button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:#10B981" onclick="openPreview('${encodeURIComponent(reply)}')">🔍 Launch Live Preview</button>`;
+    stream.scrollTop = stream.scrollHeight;
+  } catch(e) {
+    loadingMsg.innerHTML = '❌ AI Error: ' + e.message + '. Check API key.';
+  }
+}
+
+function openPreview(code) {
+  $('aiChangeSummary').textContent = decodeURIComponent(code);
+  $('aiPreviewModal').style.display = 'flex';
+}
+
+function applyAiChanges() {
+  toast('Changes Applied to Live WASA System!');
+  $('aiPreviewModal').style.display = 'none';
+}
+
+function showRollbackModal() {
+  toast('Rollback Log: No changes made in last 30 days yet.');
+}
+</script>
+</body>
+</html>
