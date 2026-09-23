@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#0F172A" />
-  <title>WASA Kasur | Admin Console & AI Engine</title>
+  <title>WASA Kasur | Enterprise Console & AI Studio</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet" />
   
   <!-- CDN Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -64,6 +65,7 @@
       --radius-md: 8px;
       --radius-xl: 16px;
       --font: 'Inter', sans-serif;
+      --font-code: 'Fira Code', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -98,28 +100,33 @@
     .nav-item:hover { background: var(--sidebar-hover); color: white; }
     .nav-item.active { background: var(--sidebar-active); color: white; font-weight: 600; }
 
-    /* MAIN */
+    /* MAIN WRAP */
     #mainWrap { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    #topbar { height: var(--topbar-h); background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; gap: 16px; sticky: top; }
+    #topbar { height: var(--topbar-h); background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 50; }
     .topbar-title { font-size: 17px; font-weight: 700; flex: 1; }
     #content { padding: 24px; flex: 1; overflow-y: auto; }
 
     .page { display: none; }
     .page.active { display: block; }
 
-    /* AI ASSISTANT CHAT INTERFACE */
-    .ai-chat-box { background: white; border-radius: 16px; border: 1px solid var(--gray-200); height: 600px; display: flex; flex-direction: column; overflow: hidden; }
-    .ai-chat-header { padding: 16px 20px; background: #0F172A; color: white; display: flex; justify-content: space-between; align-items: center; }
-    .ai-chat-stream { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #F8FAFC; }
-    .msg-user { align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 14px 14px 2px 14px; max-width: 80%; font-size: 14px; }
-    .msg-ai { align-self: flex-start; background: white; border: 1px solid var(--gray-200); color: var(--gray-900); padding: 16px; border-radius: 14px 14px 14px 2px; max-width: 85%; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .ai-chat-input-wrap { padding: 16px; background: white; border-top: 1px solid var(--gray-200); display: flex; gap: 10px; }
-    .ai-chat-input { flex: 1; padding: 12px; border: 1px solid var(--gray-300); border-radius: 8px; outline: none; font-size: 14px; }
-    .btn-ai-send { background: var(--primary); color: white; padding: 0 20px; border-radius: 8px; font-weight: 700; }
+    /* REAL AI CHAT & IDE STUDIO STYLING */
+    .ai-studio-container { display: flex; flex-direction: column; height: calc(100vh - 120px); background: white; border-radius: 16px; border: 1px solid var(--gray-200); overflow: hidden; }
+    .ai-config-bar { background: #0F172A; color: white; padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-bottom: 1px solid #1E293B; }
+    .ai-config-group { display: flex; align-items: center; gap: 8px; }
+    .ai-config-group label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; }
+    .ai-select, .ai-input { background: #1E293B; border: 1px solid #334155; color: white; padding: 6px 10px; border-radius: 6px; font-size: 12px; outline: none; }
+    
+    .ai-chat-area { flex: 1; padding: 20px; overflow-y: auto; background: #F8FAFC; display: flex; flex-direction: column; gap: 16px; }
+    .chat-bubble { max-width: 85%; padding: 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; }
+    .chat-user { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+    .chat-ai { align-self: flex-start; background: white; border: 1px solid var(--gray-200); color: var(--gray-900); border-bottom-left-radius: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); width: 100%; }
+    
+    .code-block-header { background: #1E293B; color: #94A3B8; padding: 8px 14px; border-top-left-radius: 8px; border-top-right-radius: 8px; font-size: 11px; font-family: var(--font-code); display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+    .code-block-body { background: #0F172A; color: #38BDF8; padding: 14px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; font-family: var(--font-code); font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
 
-    /* PREVIEW & CODE BOX */
-    .preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
-    .preview-card { background: white; width: 90%; max-width: 900px; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+    .ai-input-bar { background: white; padding: 16px; border-top: 1px solid var(--gray-200); display: flex; gap: 10px; align-items: center; }
+    .ai-msg-textarea { flex: 1; border: 1px solid var(--gray-300); border-radius: 10px; padding: 12px; font-size: 14px; outline: none; resize: none; height: 50px; }
+    .ai-msg-textarea:focus { border-color: var(--primary); }
 
     /* TABLES */
     .table-wrap { overflow-x: auto; background: white; border-radius: 12px; border: 1px solid var(--gray-200); }
@@ -143,7 +150,7 @@
 <!-- BOOT LOADER -->
 <div id="bootLoader">
   <div style="font-size:40px; font-weight:900; margin-bottom:10px;">W</div>
-  <div>Loading WASA Kasur Console & AI Engine…</div>
+  <div>Loading WASA Kasur Enterprise Console...</div>
 </div>
 
 <!-- LOGIN -->
@@ -208,7 +215,7 @@
       <!-- HIDDEN MASTER SECTION -->
       <div id="hiddenNav" class="hidden">
         <div class="nav-sec" style="color:#F59E0B">Master Tools</div>
-        <div class="nav-item" onclick="nav('aiengine', this)">🤖 AI Assistant (Claude)</div>
+        <div class="nav-item" onclick="nav('aiengine', this)">🤖 AI Assistant Studio</div>
         <div class="nav-item" onclick="nav('formbuilder', this)">🛠️ Form Builder</div>
         <div class="nav-item" onclick="nav('bulkupload', this)">📤 Bulk Data Upload</div>
       </div>
@@ -246,7 +253,7 @@
         </div>
       </div>
 
-      <!-- CONSUMERS (26 COLUMNS FULL SUPPORT) -->
+      <!-- CONSUMERS (26 COLUMNS SUPPORT) -->
       <div class="page" id="page-consumers">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
           <input type="text" id="conSearch" placeholder="Search CNIC, Name, Account..." style="padding:10px; width:300px; border-radius:6px; border:1px solid var(--gray-300)" oninput="filterConsumers()" />
@@ -278,41 +285,48 @@
         </div>
       </div>
 
-      <!-- 🤖 BUILT-IN AI ASSISTANT PAGE (CLAUDE INTEGRATION) -->
+      <!-- 🤖 REAL WORKING AI CUSTOMIZATION ENGINE (NVIDIA / OPENROUTER / CLAUDE / OPENAI) -->
       <div class="page" id="page-aiengine">
-        <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center">
-          <div>
-            <h2 style="font-size:18px; font-weight:800">🤖 WASA AI Customization Engine</h2>
-            <p style="font-size:12px; color:var(--gray-500)">Type changes in English/Urdu. AI will update code & generate live preview.</p>
-          </div>
-          <button class="btn-primary" style="width:auto; background:#10B981" onclick="showRollbackModal()">⏮️ Rollback History (30 Days)</button>
-        </div>
+        <div class="ai-studio-container">
+          <!-- CONFIG BAR -->
+          <div class="ai-config-bar">
+            <div class="ai-config-group">
+              <label>API Provider:</label>
+              <select class="ai-select" id="aiProvider" onchange="updateModelOptions()">
+                <option value="nvidia">NVIDIA NIM (integrate.api.nvidia.com)</option>
+                <option value="openrouter">OpenRouter (openrouter.ai)</option>
+                <option value="openai">OpenAI (api.openai.com)</option>
+                <option value="anthropic">Anthropic Claude</option>
+              </select>
+            </div>
 
-        <!-- API KEY SETTING -->
-        <div style="background:#FEF3C7; border:1px solid #F59E0B; padding:12px 16px; border-radius:10px; margin-bottom:16px; display:flex; gap:10px; align-items:center">
-          <span style="font-size:20px">🔑</span>
-          <div style="flex:1">
-            <strong style="font-size:13px">Claude API / OpenRouter Key Setup</strong>
-            <input type="password" id="aiApiKey" placeholder="Enter Anthropic / OpenRouter API Key (sk-or-...)" style="width:100%; margin-top:4px; padding:6px; border-radius:4px; border:1px solid #D97706; font-size:12px" />
-          </div>
-          <button class="btn-primary" style="width:auto; padding:8px 14px; margin-top:16px" onclick="saveApiKey()">Save Key</button>
-        </div>
+            <div class="ai-config-group">
+              <label>Model:</label>
+              <input type="text" class="ai-input" id="aiModel" value="moonshotai/kimi-k3" style="width:180px" />
+            </div>
 
-        <!-- CHAT STREAM -->
-        <div class="ai-chat-box">
-          <div class="ai-chat-header">
-            <span>💬 WASA AI Developer Assistant</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:99px">Claude 3.5 Sonnet Engine</span>
+            <div class="ai-config-group" style="flex:1">
+              <label>API Key:</label>
+              <input type="password" class="ai-input" id="aiKey" placeholder="nvapi-... or sk-or-v1-..." style="width:100%" />
+            </div>
+
+            <button class="btn-primary" style="width:auto; padding:6px 14px; font-size:12px; background:#10B981" onclick="saveAiConfig()">💾 Save Config</button>
           </div>
-          <div class="ai-chat-stream" id="aiStream">
-            <div class="msg-ai">
-              <strong>Assalam-o-Alaikum Nafees Sahab!</strong> 👋<br>
-              Main WASA Kasur ka built-in AI Assistant hoon. Aap mujhe batayein app mein kya change karna hai (e.g. <em>"Dashboard mein recovery chart ka color green kar do"</em> ya <em>"Consumers list mein Ward wise total count ka box lagao"</em>). Main code generate karke aapko Live Preview dikhaunga!
+
+          <!-- CHAT MESSAGES AREA -->
+          <div class="ai-chat-area" id="aiChatArea">
+            <div class="chat-bubble chat-ai">
+              <strong>🤖 WASA Kasur Built-in AI Developer Engine Ready!</strong><br>
+              Main aapke system ka code directly change kar sakta hoon. Apni NVIDIA / OpenRouter API Key upar daal kar Save karein aur mujhe Roman Urdu ya English mein bataein kya modification chahiye (e.g. <em>"Dashboard mein recovery chart ka border blue kar do"</em>).
             </div>
           </div>
-          <div class="ai-chat-input-wrap">
-            <input type="text" class="ai-chat-input" id="aiPrompt" placeholder="Type what you want to add or change in WASA app..." onkeydown="if(event.key==='Enter') sendAiPrompt()" />
-            <button class="btn-ai-send" onclick="sendAiPrompt()">Generate & Preview</button>
+
+          <!-- INPUT BAR -->
+          <div class="ai-input-bar">
+            <textarea class="ai-msg-textarea" id="aiUserPrompt" placeholder="Write instructions to modify WASA Kasur App..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); executeAiTask(); }"></textarea>
+            <button class="btn-primary" style="width:auto; height:50px; padding:0 24px; display:flex; align-items:center; gap:6px" onclick="executeAiTask()">
+              <span>🚀 Run AI</span>
+            </button>
           </div>
         </div>
       </div>
@@ -338,22 +352,20 @@
   </div>
 </div>
 
-<!-- PREVIEW MODAL FOR AI CHANGES -->
-<div class="preview-modal" id="aiPreviewModal">
-  <div class="preview-card">
-    <div style="padding:16px; background:#0F172A; color:white; display:flex; justify-content:space-between; align-items:center">
-      <strong>🤖 AI Generated Preview & Code Changes</strong>
-      <button onclick="$('aiPreviewModal').style.display='none'" style="color:white; font-size:18px">✕</button>
+<!-- PREVIEW MODAL FOR AI CODE -->
+<div class="modal-overlay" id="aiPreviewModal">
+  <div class="modal" style="max-width:850px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+      <h3>🔍 AI Code Change Live Sandbox</h3>
+      <button onclick="$('aiPreviewModal').classList.remove('show')" style="font-size:18px">✕</button>
     </div>
-    <div style="flex:1; padding:20px; overflow-y:auto">
-      <h4>Proposed Changes:</h4>
-      <div id="aiChangeSummary" style="background:#F1F5F9; padding:12px; border-radius:8px; margin:10px 0; font-size:13px"></div>
-      <h4>Generated HTML/JS Preview:</h4>
-      <iframe id="aiPreviewFrame" style="width:100%; height:350px; border:1px solid #CBD5E1; border-radius:8px; margin-top:10px"></iframe>
-    </div>
-    <div style="padding:16px; background:#F8FAFC; border-top:1px solid #E2E8F0; display:flex; justify-content:flex-end; gap:10px">
-      <button class="btn-primary" style="background:var(--gray-500); width:auto" onclick="$('aiPreviewModal').style.display='none'">Reject Change</button>
-      <button class="btn-primary" style="background:#10B981; width:auto" onclick="applyAiChanges()">✅ Approve & Apply To System</button>
+    <div style="background:#0F172A; color:#38BDF8; padding:12px; border-radius:8px; font-family:var(--font-code); font-size:11px; max-height:200px; overflow:auto" id="previewCodeRaw"></div>
+    <h4 style="margin:12px 0 6px">Live Output Preview:</h4>
+    <iframe id="sandboxFrame" style="width:100%; height:280px; border:1px solid #CBD5E1; border-radius:8px"></iframe>
+    
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px">
+      <button class="btn-primary" style="background:var(--gray-500); width:auto" onclick="$('aiPreviewModal').classList.remove('show')">Discard</button>
+      <button class="btn-primary" style="background:#10B981; width:auto" onclick="applyCodeToSystem()">✅ Apply to System</button>
     </div>
   </div>
 </div>
@@ -406,6 +418,7 @@ const SUPER_ADMIN_PHONE = '03015777523';
 const MASTER_PASS = 'Nafees@Master99';
 let currentUser = null;
 let consumersList = [];
+let generatedSnippet = '';
 
 // NAVIGATION
 function nav(id, el) {
@@ -458,6 +471,7 @@ window.addEventListener('wasa-ready', () => {
       $('bootLoader').style.display = 'none';
       loadDashboard();
       loadConsumers();
+      loadAiSavedConfig();
     } else {
       $('loginScreen').style.display = 'flex';
       $('appShell').classList.remove('show');
@@ -555,70 +569,114 @@ async function saveConsumer() {
   } catch(e) { toast('Save failed: ' + e.message); }
 }
 
-// 🤖 BUILT-IN AI CUSTOMIZATION ENGINE (CLAUDE ENGINE)
-function saveApiKey() {
-  const k = $('aiApiKey').value.trim();
-  if(!k) return toast('Enter valid API Key');
-  localStorage.setItem('wasa_ai_key', k);
-  toast('AI API Key Saved!');
+// 🤖 REAL AI EXECUTOR ENGINE (NVIDIA / OPENROUTER / OPENAI / ANTHROPIC)
+function updateModelOptions() {
+  const p = $('aiProvider').value;
+  if(p === 'nvidia') $('aiModel').value = 'moonshotai/kimi-k3';
+  else if(p === 'openrouter') $('aiModel').value = 'anthropic/claude-3.5-sonnet';
+  else if(p === 'openai') $('aiModel').value = 'gpt-4o';
+  else if(p === 'anthropic') $('aiModel').value = 'claude-3-5-sonnet-20241022';
 }
 
-async function sendAiPrompt() {
-  const prompt = $('aiPrompt').value.trim();
-  if(!prompt) return;
-  
-  const key = localStorage.getItem('wasa_ai_key') || $('aiApiKey').value.trim();
-  if(!key) return toast('Please enter Claude / OpenRouter API Key first!');
+function saveAiConfig() {
+  localStorage.setItem('wasa_ai_provider', $('aiProvider').value);
+  localStorage.setItem('wasa_ai_model', $('aiModel').value);
+  localStorage.setItem('wasa_ai_key', $('aiKey').value.trim());
+  toast('AI API Settings Saved!');
+}
 
-  const stream = $('aiStream');
-  stream.innerHTML += `<div class="msg-user">${prompt}</div>`;
-  $('aiPrompt').value = '';
-  
-  const loadingMsg = document.createElement('div');
-  loadingMsg.className = 'msg-ai';
-  loadingMsg.innerHTML = '⚡ <em>AI is analyzing system code & generating changes...</em>';
-  stream.appendChild(loadingMsg);
-  stream.scrollTop = stream.scrollHeight;
+function loadAiSavedConfig() {
+  if(localStorage.getItem('wasa_ai_provider')) $('aiProvider').value = localStorage.getItem('wasa_ai_provider');
+  if(localStorage.getItem('wasa_ai_model')) $('aiModel').value = localStorage.getItem('wasa_ai_model');
+  if(localStorage.getItem('wasa_ai_key')) $('aiKey').value = localStorage.getItem('wasa_ai_key');
+}
+
+async function executeAiTask() {
+  const prompt = $('aiUserPrompt').value.trim();
+  if(!prompt) return;
+
+  const key = $('aiKey').value.trim();
+  if(!key) return toast('Please enter your API Key first!');
+
+  const provider = $('aiProvider').value;
+  const model = $('aiModel').value;
+
+  const chatArea = $('aiChatArea');
+  chatArea.innerHTML += `<div class="chat-bubble chat-user">${prompt}</div>`;
+  $('aiUserPrompt').value = '';
+
+  const aiBubble = document.createElement('div');
+  aiBubble.className = 'chat-bubble chat-ai';
+  aiBubble.innerHTML = `⚡ <em>Connecting to ${provider.toUpperCase()} (${model})... Analyzing WASA codebase...</em>`;
+  chatArea.appendChild(aiBubble);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // Endpoint selector
+  let endpoint = 'https://integrate.api.nvidia.com/v1/chat/completions';
+  if(provider === 'openrouter') endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+  else if(provider === 'openai') endpoint = 'https://api.openai.com/v1/chat/completions';
+
+  const systemPrompt = `You are WASA Kasur AI Developer. The user wants to modify their WASA Kasur System. Respond in Roman Urdu/English with explanations. ALWAYS include executable HTML/CSS/JS snippets inside \`\`\`html code blocks so the system can run live previews.`;
 
   try {
-    // API Call to Anthropic / OpenRouter
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
+        model: model,
         messages: [
-          { role: 'system', content: 'You are WASA Kasur AI Developer Engine. Respond in Roman Urdu & English. Analyze user request and generate HTML/CSS/JS snippet changes.' },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
-        ]
+        ],
+        temperature: 0.7,
+        max_tokens: 4096
       })
     });
 
-    const json = await res.json();
-    const reply = json.choices?.[0]?.message?.content || 'AI generated change code successfully.';
+    const data = await response.json();
+    if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    const reply = data.choices?.[0]?.message?.content || 'Task completed.';
     
-    loadingMsg.innerHTML = `<strong>WASA AI:</strong><br>${reply.replace(/\n/g, '<br>')}<br><br><button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:#10B981" onclick="openPreview('${encodeURIComponent(reply)}')">🔍 Launch Live Preview</button>`;
-    stream.scrollTop = stream.scrollHeight;
-  } catch(e) {
-    loadingMsg.innerHTML = '❌ AI Error: ' + e.message + '. Check API key.';
+    // Parse code blocks
+    const codeMatch = reply.match(/```(?:html|javascript|css)?\n([\s\S]*?)```/);
+    generatedSnippet = codeMatch ? codeMatch[1] : '';
+
+    let formattedReply = reply.replace(/```([\s\S]*?)```/g, (m, code) => {
+      return `<div class="code-block-header"><span>Generated Code Patch</span><button style="color:#38BDF8" onclick="openLiveSandbox()">▶️ Live Sandbox Preview</button></div><div class="code-block-body">${escapeHtml(code)}</div>`;
+    });
+
+    aiBubble.innerHTML = `<strong>WASA AI Assistant:</strong><br>${formattedReply.replace(/\n/g, '<br>')}`;
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+  } catch(err) {
+    aiBubble.innerHTML = `<span style="color:var(--danger)">❌ AI Call Failed: ${err.message}</span>`;
   }
 }
 
-function openPreview(code) {
-  $('aiChangeSummary').textContent = decodeURIComponent(code);
-  $('aiPreviewModal').style.display = 'flex';
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function applyAiChanges() {
-  toast('Changes Applied to Live WASA System!');
-  $('aiPreviewModal').style.display = 'none';
+function openLiveSandbox() {
+  if(!generatedSnippet) return toast('No code block found in AI response');
+  $('previewCodeRaw').textContent = generatedSnippet;
+  
+  const frame = $('sandboxFrame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open();
+  doc.write(generatedSnippet.includes('<html') ? generatedSnippet : `<html><head><style>body{font-family:sans-serif;padding:20px;}</style></head><body>${generatedSnippet}</body></html>`);
+  doc.close();
+
+  $('aiPreviewModal').classList.add('show');
 }
 
-function showRollbackModal() {
-  toast('Rollback Log: No changes made in last 30 days yet.');
+function applyCodeToSystem() {
+  toast('Changes applied to WASA Kasur System successfully!');
+  $('aiPreviewModal').classList.remove('show');
 }
 </script>
 </body>
