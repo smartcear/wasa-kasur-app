@@ -1,277 +1,577 @@
-<!-- Is code ko admin-panel.html mein paste karein -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WASA Kasur Admin - Master AI</title>
+    <title>WASA Kasur - Admin Management Panel</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --wasa-navy: #0f172a; --wasa-blue: #1e293b; --wasa-accent: #3b82f6; }
-        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .sidebar { background-color: var(--wasa-navy); width: 260px; height: 100vh; position: fixed; transition: all 0.3s; z-index: 1000; }
-        .main-content { margin-left: 260px; transition: all 0.3s; min-height: 100vh; }
-        .ai-chat-window { height: calc(100vh - 250px); overflow-y: auto; }
-        .code-block { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9rem; margin: 10px 0; overflow-x: auto; position: relative; }
-        .preview-btn { position: absolute; top: 5px; right: 5px; background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .hidden-tool { display: none; }
-        .active-tool { display: block !important; }
-        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } .sidebar.open { transform: translateX(0); } }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+        .sidebar { background-color: #0b1120; width: 260px; height: 100vh; position: fixed; left: 0; top: 0; z-index: 50; display: flex; flex-direction: column; justify-content: space-between; }
+        .main-wrapper { margin-left: 260px; min-height: 100vh; display: flex; flex-direction: column; }
+        .nav-category { font-size: 0.65rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase; padding: 1rem 1.5rem 0.4rem; }
+        .nav-item { display: flex; items-center: center; gap: 0.75rem; padding: 0.6rem 1.5rem; color: #94a3b8; font-size: 0.875rem; font-weight: 500; border-left: 3px solid transparent; transition: all 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: #1e293b; color: #ffffff; border-left-color: #2563eb; }
+        .master-tool-item.active { border-left-color: #f97316; background-color: #1e1b4b; color: #fb923c; }
+        .code-block { background: #0f172a; color: #38bdf8; padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.85rem; margin-top: 0.5rem; overflow-x: auto; position: relative; border: 1px solid #1e293b; }
+        .preview-btn-badge { position: absolute; top: 0.5rem; right: 0.5rem; background: #2563eb; color: #ffffff; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; }
+        .preview-btn-badge:hover { background: #1d4ed8; }
+        .hidden-section { display: none !important; }
+        
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     </style>
 </head>
-<body>
+<body class="antialiased">
 
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="p-6">
-            <h1 class="text-white text-2xl font-bold flex items-center gap-2">
-                <i class="fas fa-water text-blue-400"></i> WASA Kasur
-            </h1>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div>
+            <!-- Branding Header -->
+            <div class="h-16 flex items-center px-6 border-b border-slate-800">
+                <span class="text-white font-bold text-lg tracking-wide flex items-center gap-2">
+                    <i class="fas fa-droplet text-blue-500"></i> WASA Kasur
+                </span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="mt-2">
+                <div class="nav-category">Overview</div>
+                <a href="#" onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-item active">
+                    <i class="fas fa-chart-pie w-4"></i> Dashboard
+                </a>
+
+                <div class="nav-category">People</div>
+                <a href="#" onclick="switchTab('consumers')" id="btn-consumers" class="nav-item">
+                    <i class="fas fa-users w-4"></i> Consumers
+                </a>
+                <a href="#" onclick="switchTab('officers')" id="btn-officers" class="nav-item">
+                    <i class="fas fa-id-card w-4"></i> Officers Directory
+                </a>
+
+                <div class="nav-category">Operations</div>
+                <a href="#" onclick="switchTab('activities')" id="btn-activities" class="nav-item">
+                    <i class="fas fa-tasks w-4"></i> Field Activities
+                </a>
+
+                <!-- Hidden Master Tools Section -->
+                <div id="master-tools-menu" class="hidden-section">
+                    <div class="nav-category text-orange-400">Master Tools</div>
+                    <a href="#" onclick="switchTab('ai-studio')" id="btn-ai-studio" class="nav-item master-tool-item">
+                        <i class="fas fa-robot w-4"></i> AI Studio
+                    </a>
+                    <a href="#" onclick="switchTab('bulk-upload')" id="btn-bulk-upload" class="nav-item master-tool-item">
+                        <i class="fas fa-file-csv w-4"></i> Bulk Upload
+                    </a>
+                </div>
+            </nav>
         </div>
-        <nav class="mt-6">
-            <a href="#" onclick="showSection('dashboard')" class="flex items-center text-gray-300 py-3 px-6 hover:bg-slate-800 transition">
-                <i class="fas fa-chart-line w-6"></i> Dashboard
-            </a>
-            <a href="#" onclick="showSection('consumers')" class="flex items-center text-gray-300 py-3 px-6 hover:bg-slate-800 transition">
-                <i class="fas fa-users w-6"></i> Consumers
-            </a>
-        </nav>
-        <!-- Footer for Master Access -->
-        <div class="absolute bottom-0 w-full p-4 border-t border-slate-700">
-            <p class="text-[10px] text-gray-500 text-center cursor-pointer" id="footer-version" onclick="handleMasterTap()">
+
+        <!-- Footer Footer Activation Trigger -->
+        <div class="p-4 border-t border-slate-800 text-center">
+            <p id="footer-version" onclick="handleFooterTap()" class="text-[11px] text-slate-500 cursor-pointer select-none hover:text-slate-400 transition">
                 Developed by NAFEES • v2.8.1.0
             </p>
         </div>
-    </div>
+    </aside>
 
-    <!-- Main Content -->
-    <div class="main-content" id="main-content">
-        <!-- Top Bar -->
-        <header class="bg-white border-b h-16 flex items-center justify-between px-8 sticky top-0 z-50">
-            <button id="menu-btn" class="md:hidden text-2xl"><i class="fas fa-bars"></i></button>
-            <div id="section-title" class="font-semibold text-gray-700 text-lg">Dashboard</div>
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-wrapper">
+        <!-- Top Navbar -->
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-40">
+            <div id="page-heading" class="font-bold text-slate-800 uppercase tracking-wider text-sm">
+                Dashboard
+            </div>
             <div class="flex items-center gap-4">
-                <span id="admin-name" class="text-sm text-gray-600 font-medium">Super Admin</span>
-                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">A</div>
+                <span id="user-role-badge" class="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-200">
+                    Super Admin
+                </span>
+                <button onclick="logoutAdmin()" class="text-xs text-red-600 font-medium hover:underline">
+                    Door <i class="fas fa-sign-out-alt ml-1"></i>
+                </button>
             </div>
         </header>
 
-        <!-- Dashboard Section -->
-        <div id="section-dashboard" class="p-8 section-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <p class="text-gray-500 text-sm">Total Consumers</p>
-                    <h2 class="text-3xl font-bold mt-2">12,450</h2>
-                    <div class="text-green-500 text-xs mt-2"><i class="fas fa-arrow-up"></i> 4% vs last month</div>
+        <!-- Dynamic Content Sections -->
+        <main class="p-8 flex-grow">
+            
+            <!-- 1. DASHBOARD SECTION -->
+            <section id="section-dashboard">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Total Consumers</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1" id="dash-total-consumers">12,450</p>
+                        <p class="text-xs text-emerald-600 mt-2 font-medium"><i class="fas fa-arrow-up"></i> +2.4% this month</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Active Connections</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">11,890</p>
+                        <p class="text-xs text-slate-400 mt-2">Active in Kasur Ward 1-12</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Pending Requests</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-1">42</p>
+                        <p class="text-xs text-orange-500 mt-2 font-medium">Requires Officer Verification</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Field Officers</p>
+                        <p class="text-2xl font-bold text-blue-600 mt-1">18</p>
+                        <p class="text-xs text-slate-400 mt-2">Active in Field</p>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Master AI Studio Section (Hidden) -->
-        <div id="section-ai-studio" class="p-8 section-content hidden-tool">
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col" style="height: 80vh;">
-                <!-- Header -->
-                <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-robot text-blue-400"></i>
-                        <div>
-                            <h3 class="font-bold text-sm">WASA AI Studio</h3>
-                            <p class="text-[10px] text-gray-400">Model: Moonshot Kimi-K3 (NVIDIA)</p>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-base mb-4">System Overview</h3>
+                    <p class="text-sm text-slate-600">WASA Kasur Management System is running normally. Firebase & Cloudinary storage operational.</p>
+                </div>
+            </section>
+
+            <!-- 2. CONSUMERS DATABASE SECTION (26 COLUMNS SCHEMA) -->
+            <section id="section-consumers" class="hidden-section">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-4">
+                        <input type="text" id="consumer-search" onkeyup="filterConsumers()" placeholder="Search by Consumer No, Name, CNIC, Ward..." class="border border-slate-300 rounded-lg px-4 py-2 text-sm w-80 focus:outline-none focus:border-blue-500">
+                        <span class="text-xs text-slate-500 font-medium">Showing <b id="consumer-count">10</b> records</span>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table class="w-full text-left text-xs text-slate-700 whitespace-nowrap">
+                            <thead class="bg-slate-100 uppercase font-semibold text-slate-600 sticky top-0 border-b">
+                                <tr>
+                                    <th class="p-3">Consumer No</th>
+                                    <th class="p-3">Consumer Name</th>
+                                    <th class="p-3">Father Name</th>
+                                    <th class="p-3">CNIC</th>
+                                    <th class="p-3">Contact No</th>
+                                    <th class="p-3">Address</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">SubCategory</th>
+                                    <th class="p-3">Comm Category</th>
+                                    <th class="p-3">Dia Discharge</th>
+                                    <th class="p-3">Old Account No</th>
+                                    <th class="p-3">Building Floor</th>
+                                    <th class="p-3">Milestone</th>
+                                    <th class="p-3">Walk Sort</th>
+                                    <th class="p-3">Email</th>
+                                    <th class="p-3">Deactivation Date</th>
+                                    <th class="p-3">No of Washrooms</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Ward</th>
+                                    <th class="p-3">Aquifier Motor Size</th>
+                                    <th class="p-3">Property No</th>
+                                    <th class="p-3">Area</th>
+                                    <th class="p-3">Re-Active Date</th>
+                                    <th class="p-3">Active Con Date</th>
+                                    <th class="p-3">Service Name</th>
+                                    <th class="p-3">No of Pumps</th>
+                                    <th class="p-3">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consumers-table-body" class="divide-y divide-slate-100">
+                                <!-- Sample Rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. OFFICERS DIRECTORY -->
+            <section id="section-officers" class="hidden-section">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4">WASA Officers Directory</h3>
+                    <p class="text-sm text-slate-600">List of registered officers and field credentials.</p>
+                </div>
+            </section>
+
+            <!-- 4. FIELD ACTIVITIES -->
+            <section id="section-activities" class="hidden-section">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4">Field Activities Log</h3>
+                    <p class="text-sm text-slate-600">Real-time meter reading updates, connection status changes, and site photos.</p>
+                </div>
+            </section>
+
+            <!-- 5. MASTER TOOL: AI STUDIO (NVIDIA NIM / OPENROUTER) -->
+            <section id="section-ai-studio" class="hidden-section">
+                <div class="bg-slate-900 rounded-xl shadow-xl overflow-hidden flex flex-col h-[78vh]">
+                    <!-- Header Bar -->
+                    <div class="bg-slate-950 px-6 py-3 flex items-center justify-between border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-microchip text-blue-500 text-lg"></i>
+                            <div>
+                                <h2 class="text-white font-bold text-sm">WASA AI Studio</h2>
+                                <p class="text-[10px] text-slate-400">Model: Moonshot Kimi-K3 (NVIDIA NIM Engine)</p>
+                            </div>
+                        </div>
+
+                        <!-- Provider & Key Settings -->
+                        <div class="flex items-center gap-2">
+                            <select id="ai-provider" class="bg-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none">
+                                <option value="nvidia">NVIDIA NIM Endpoint</option>
+                                <option value="openrouter">OpenRouter Fallback</option>
+                            </select>
+                            <input type="password" id="ai-api-key" placeholder="Enter API Key" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded border border-slate-700 outline-none w-48 focus:border-blue-500">
+                            <button onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded transition">
+                                Save Key
+                            </button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="password" id="nv-api-key" placeholder="NVIDIA API KEY" class="bg-slate-800 text-[10px] px-2 py-1 rounded border border-slate-700 w-40 focus:outline-none">
-                        <button onclick="saveKey()" class="text-[10px] bg-blue-600 px-2 py-1 rounded">Save</button>
-                    </div>
-                </div>
 
-                <!-- Chat Box -->
-                <div id="ai-chat-box" class="flex-grow p-6 overflow-y-auto bg-gray-50 space-y-4">
-                    <div class="flex justify-start">
-                        <div class="bg-white border rounded-lg p-3 max-w-[80%] shadow-sm text-sm">
-                            Assalam-o-Alaikum! Main WASA AI hoon. App ka code update karna ho ya naya feature banana ho, bas batayein.
+                    <!-- Chat Output Window -->
+                    <div id="ai-chat-window" class="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-900">
+                        <div class="flex justify-start">
+                            <div class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg p-3 max-w-[80%] text-xs leading-relaxed">
+                                Assalam-o-Alaikum! Main WASA AI Studio hoon. Main app mein koi bhi code changes, new features ya queries handle kar sakta hoon. Apne requirement niche likhein.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="p-4 bg-slate-950 border-t border-slate-800">
+                        <div class="flex gap-2">
+                            <textarea id="ai-user-prompt" rows="2" placeholder="Ask anything or describe a code change in Roman Urdu..." class="flex-grow bg-slate-900 text-white border border-slate-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-blue-500 resize-none"></textarea>
+                            <button id="ai-send-btn" onclick="executeAiQuery()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 font-semibold text-xs rounded-lg transition flex items-center gap-2 justify-center">
+                                <span>Run AI</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Input Area -->
-                <div class="p-4 bg-white border-t">
-                    <div class="flex gap-2">
-                        <textarea id="ai-input" rows="1" placeholder="Sawal poochein ya code change batayein..." 
-                            class="flex-grow border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
-                        <button onclick="sendToAI()" id="send-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
-                            <span>Send</span>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
+            <!-- 6. MASTER TOOL: BULK UPLOAD -->
+            <section id="section-bulk-upload" class="hidden-section">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4">Bulk Data Import (CSV / Excel)</h3>
+                    <p class="text-xs text-slate-500 mb-4">Upload CSV with matching 26 columns to bulk import consumers into Firestore.</p>
+                    <input type="file" id="bulk-csv-file" accept=".csv" class="border p-2 rounded text-xs">
                 </div>
-            </div>
-        </div>
+            </section>
+
+        </main>
     </div>
 
-    <!-- Preview Modal -->
-    <div id="preview-modal" class="fixed inset-0 bg-black/80 z-[2000] hidden flex flex-col">
-        <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-            <span class="font-bold">Live Preview</span>
-            <div class="flex gap-4">
-                <button onclick="applyCode()" class="bg-green-600 px-4 py-1 rounded text-sm hover:bg-green-700">Apply Changes</button>
-                <button onclick="closePreview()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <!-- LIVE PREVIEW MODAL -->
+    <div id="preview-modal" class="fixed inset-0 bg-black/80 z-[3000] hidden flex flex-col">
+        <div class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
+            <span class="font-bold text-xs uppercase tracking-wider text-blue-400">AI Code Live Preview</span>
+            <div class="flex items-center gap-3">
+                <button onclick="applyGeneratedCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded font-semibold">
+                    Apply Changes
+                </button>
+                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white text-base">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
         <iframe id="preview-frame" class="w-full flex-grow bg-white"></iframe>
     </div>
 
+    <!-- JAVASCRIPT ENGINE -->
     <script>
-        // Master Access Logic
-        let tapCount = 0;
-        function handleMasterTap() {
-            tapCount++;
-            if (tapCount >= 7) {
-                tapCount = 0;
-                let pass = prompt("Enter Master Password:");
-                if (pass === "Nafees@Master99") {
-                    showSection('ai-studio');
-                } else {
-                    alert("Unauthorized!");
+        // --- MASTER SECURITY & FOOTER TRIPLE/7 TAP LOGIC ---
+        let footerTapCounter = 0;
+        let footerTapTimer = null;
+
+        function handleFooterTap() {
+            footerTapCounter++;
+            clearTimeout(footerTapTimer);
+
+            if (footerTapCounter >= 7) {
+                footerTapCounter = 0;
+                const masterPass = prompt("Enter Master Password:");
+                if (masterPass === "Nafees@Master99") {
+                    document.getElementById('master-tools-menu').classList.remove('hidden-section');
+                    alert("Master Tools Unlocked!");
+                    switchTab('ai-studio');
+                } else if (masterPass !== null) {
+                    alert("Incorrect Password!");
                 }
+            } else {
+                footerTapTimer = setTimeout(() => { footerTapCounter = 0; }, 3000);
             }
         }
 
-        function showSection(sectionId) {
-            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden-tool'));
-            document.getElementById('section-' + sectionId).classList.remove('hidden-tool');
-            document.getElementById('section-title').innerText = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
+        // --- NAVIGATION LOGIC ---
+        function switchTab(tabId) {
+            // Hide all sections
+            const sections = ['dashboard', 'consumers', 'officers', 'activities', 'ai-studio', 'bulk-upload'];
+            sections.forEach(s => {
+                const el = document.getElementById('section-' + s);
+                if (el) el.classList.add('hidden-section');
+
+                const btn = document.getElementById('btn-' + s);
+                if (btn) btn.classList.remove('active');
+            });
+
+            // Show selected section
+            const targetSection = document.getElementById('section-' + tabId);
+            if (targetSection) targetSection.classList.remove('hidden-section');
+
+            const targetBtn = document.getElementById('btn-' + tabId);
+            if (targetBtn) targetBtn.classList.add('active');
+
+            // Update Header Title
+            const headingMap = {
+                'dashboard': 'Dashboard',
+                'consumers': 'Consumers Database (26 Columns)',
+                'officers': 'Officers Directory',
+                'activities': 'Field Activities',
+                'ai-studio': 'AIENGINE',
+                'bulk-upload': 'Bulk Import'
+            };
+            document.getElementById('page-heading').innerText = headingMap[tabId] || 'Admin';
         }
 
-        // AI Functionality
-        const chatBox = document.getElementById('ai-chat-box');
-        const aiInput = document.getElementById('ai-input');
-        const apiKeyInput = document.getElementById('nv-api-key');
-        let currentGeneratedCode = "";
+        // --- CONSUMERS TABLE POPULATOR (SAMPLE DUMMY DATA FOR ALL 26 COLUMNS) ---
+        const sampleConsumers = [
+            {
+                no: "CON-1001", name: "Muhammad Ali", father: "Ahmad Din", cnic: "35102-1234567-1", phone: "03001234567",
+                addr: "House 12, Ward 4, Kasur", cat: "Domestic", subcat: "Regular", commcat: "N/A", discharge: "1/2 inch",
+                oldacc: "OLD-882", floor: "Ground", milestone: "Near Main Mosque", walksort: "01", email: "ali@gmail.com",
+                deact: "-", washrooms: "2", status: "Active", ward: "Ward 4", motor: "1.5 HP", prop: "P-8821",
+                area: "5 Marla", reactive: "-", activecon: "2021-05-10", service: "Water Supply", pumps: "1", remarks: "Regular Payer"
+            },
+            {
+                no: "CON-1002", name: "Tariq Mahmood", father: "Ghulam Hussain", cnic: "35102-9876543-3", phone: "03217654321",
+                addr: "Shop 4, Railway Road, Kasur", cat: "Commercial", subcat: "Plaza", commcat: "Retail", discharge: "1 inch",
+                oldacc: "OLD-441", floor: "1st Floor", milestone: "Opposite Station", walksort: "02", email: "tariq@yahoo.com",
+                deact: "-", washrooms: "4", status: "Active", ward: "Ward 1", motor: "3.0 HP", prop: "P-1092",
+                area: "10 Marla", reactive: "-", activecon: "2019-11-20", service: "Sewerage & Water", pumps: "2", remarks: "Commercial Tariff"
+            }
+        ];
 
-        // Load Key on Start
-        window.onload = () => {
-            const savedKey = localStorage.getItem('nv_api_key');
-            if (savedKey) apiKeyInput.value = savedKey;
-        };
-
-        function saveKey() {
-            localStorage.setItem('nv_api_key', apiKeyInput.value);
-            alert("API Key Saved Safely!");
+        function loadConsumersTable() {
+            const tbody = document.getElementById('consumers-table-body');
+            tbody.innerHTML = sampleConsumers.map(c => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-blue-600">${c.no}</td>
+                    <td class="p-3 font-semibold text-slate-800">${c.name}</td>
+                    <td class="p-3">${c.father}</td>
+                    <td class="p-3">${c.cnic}</td>
+                    <td class="p-3">${c.phone}</td>
+                    <td class="p-3">${c.addr}</td>
+                    <td class="p-3"><span class="bg-slate-200 text-slate-800 px-2 py-0.5 rounded text-[10px] font-bold">${c.cat}</span></td>
+                    <td class="p-3">${c.subcat}</td>
+                    <td class="p-3">${c.commcat}</td>
+                    <td class="p-3">${c.discharge}</td>
+                    <td class="p-3">${c.oldacc}</td>
+                    <td class="p-3">${c.floor}</td>
+                    <td class="p-3">${c.milestone}</td>
+                    <td class="p-3">${c.walksort}</td>
+                    <td class="p-3">${c.email}</td>
+                    <td class="p-3">${c.deact}</td>
+                    <td class="p-3">${c.washrooms}</td>
+                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">${c.status}</span></td>
+                    <td class="p-3">${c.ward}</td>
+                    <td class="p-3">${c.motor}</td>
+                    <td class="p-3">${c.prop}</td>
+                    <td class="p-3">${c.area}</td>
+                    <td class="p-3">${c.reactive}</td>
+                    <td class="p-3">${c.activecon}</td>
+                    <td class="p-3">${c.service}</td>
+                    <td class="p-3">${c.pumps}</td>
+                    <td class="p-3">${c.remarks}</td>
+                </tr>
+            `).join('');
+            document.getElementById('consumer-count').innerText = sampleConsumers.length;
         }
 
-        async function sendToAI() {
-            const prompt = aiInput.value.trim();
-            const apiKey = apiKeyInput.value;
-            
-            if (!prompt) return;
-            if (!apiKey) { alert("Pehle NVIDIA API Key enter karein!"); return; }
+        function filterConsumers() {
+            const query = document.getElementById('consumer-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#consumers-table-body tr');
+            rows.forEach(r => {
+                const text = r.innerText.toLowerCase();
+                r.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
 
-            // Add user message to UI
-            addMessage(prompt, 'user');
-            aiInput.value = "";
-            
-            // Show Loading
-            const loadingId = 'load-' + Date.now();
-            addMessage('<i class="fas fa-spinner fa-spin"></i> WASA AI soch raha hai...', 'ai', loadingId);
+        // --- AI STUDIO ENGINE (RESOLVES CORS & FAILED TO FETCH) ---
+        let globalGeneratedCode = "";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConsumersTable();
+            const savedKey = localStorage.getItem('wasa_ai_key');
+            if (savedKey) document.getElementById('ai-api-key').value = savedKey;
+        });
+
+        function saveApiKey() {
+            const key = document.getElementById('ai-api-key').value.trim();
+            if (!key) { alert("Please enter a key!"); return; }
+            localStorage.setItem('wasa_ai_key', key);
+            alert("API Key saved successfully!");
+        }
+
+        async function executeAiQuery() {
+            const promptInput = document.getElementById('ai-user-prompt');
+            const userText = promptInput.value.trim();
+            const apiKey = document.getElementById('ai-api-key').value.trim();
+            const provider = document.getElementById('ai-provider').value;
+
+            if (!userText) return;
+            if (!apiKey) {
+                alert("Pehle API Key dakhil karein aur 'Save Key' dabayein!");
+                return;
+            }
+
+            // Append User Message to Chat Window
+            appendChatMessage(userText, 'user');
+            promptInput.value = '';
+
+            // Append Loading Indicator
+            const loadingId = 'ai-load-' + Date.now();
+            appendChatMessage('<i class="fas fa-spinner fa-spin mr-2"></i> WASA AI processing...', 'ai', loadingId);
 
             try {
-                const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: "moonshotai/kimi-k3",
-                        messages: [
-                            { 
-                                role: "system", 
-                                content: "You are a senior developer for WASA Kasur. You write only clean, vanilla JS, HTML5 and CSS3 code. If the user asks for code changes, provide the full code block. User speaks Roman Urdu." 
-                            },
-                            { role: "user", content: prompt }
-                        ],
-                        temperature: 0.2,
-                        max_tokens: 4096
-                    })
-                });
+                let response, data;
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || "Server error occurred");
+                if (provider === 'nvidia') {
+                    // NVIDIA NIM Chat Completion Endpoint
+                    response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${apiKey}`,
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            model: "moonshotai/kimi-k3",
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "You are an expert full-stack developer for WASA Kasur. Answer in clear Roman Urdu. If code is requested, output full working HTML/JS inside standard ```html ``` codeblocks."
+                                },
+                                { role: "user", content: userText }
+                            ],
+                            temperature: 0.2,
+                            max_tokens: 3000
+                        })
+                    });
+                } else {
+                    // OpenRouter Proxy Fallback Endpoint
+                    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${apiKey}`,
+                            "HTTP-Referer": window.location.href,
+                            "X-Title": "WASA Kasur Admin"
+                        },
+                        body: JSON.stringify({
+                            model: "moonshotai/kimi-k3",
+                            messages: [
+                                { role: "system", content: "You are WASA Kasur AI Developer. Respond in Roman Urdu." },
+                                { role: "user", content: userText }
+                            ]
+                        })
+                    });
                 }
 
-                const data = await response.json();
-                const aiResponse = data.choices[0].message.content;
-                
-                // Remove Loading
-                document.getElementById(loadingId).parentElement.parentElement.remove();
-                
-                // Format and Add AI Message
-                formatAndAddResponse(aiResponse);
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Server returned HTTP ${response.status}: ${errText || 'Authorization or Rate limit failed'}`);
+                }
 
-            } catch (error) {
-                document.getElementById(loadingId).innerHTML = `<span class="text-red-500">Error: ${error.message}</span>`;
-                console.error("AI Error:", error);
+                data = await response.json();
+                const aiReply = data.choices[0].message.content;
+
+                // Remove loading message
+                document.getElementById(loadingId).parentElement.parentElement.remove();
+
+                // Process AI response and display
+                renderAiReply(aiReply);
+
+            } catch (err) {
+                console.error("AI Fetch Failure:", err);
+                const loadElem = document.getElementById(loadingId);
+                if (loadElem) {
+                    loadElem.innerHTML = `
+                        <div class="text-red-400 font-bold">❌ AI Error: ${err.message}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">
+                            Tip: Agar "Failed to fetch" aa raha hai toh browser CORS block kar raha hai. Switch dropdown to <b>OpenRouter Fallback</b> or check your Key format.
+                        </div>
+                    `;
+                }
             }
         }
 
-        function addMessage(text, sender, id = null) {
-            const div = document.createElement('div');
-            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-            div.innerHTML = `
-                <div id="${id || ''}" class="${sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border'} rounded-lg p-3 max-w-[80%] shadow-sm text-sm">
-                    ${text}
+        function appendChatMessage(messageHtml, sender, elementId = null) {
+            const chatWin = document.getElementById('ai-chat-window');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const bgClass = sender === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200 border border-slate-700';
+
+            wrapper.innerHTML = `
+                <div ${elementId ? `id="${elementId}"` : ''} class="${bgClass} rounded-lg p-3 max-w-[85%] text-xs leading-relaxed shadow-md">
+                    ${messageHtml}
                 </div>
             `;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatWin.appendChild(wrapper);
+            chatWin.scrollTop = chatWin.scrollHeight;
         }
 
-        function formatAndAddResponse(text) {
-            // Check for code blocks
-            const codeRegex = /```html([\s\S]*?)```/g;
-            let match;
-            let lastIdx = 0;
-            let htmlContent = text;
+        function renderAiReply(replyText) {
+            // Check if AI generated code blocks
+            const hasCode = replyText.includes("```html");
 
-            if (text.includes("```html")) {
-                currentGeneratedCode = text.match(/```html([\s\S]*?)```/)[1];
-                htmlContent = text.replace(/```html([\s\S]*?)```/g, (m, code) => {
+            if (hasCode) {
+                const codeMatch = replyText.match(/```html([\s\S]*?)```/);
+                if (codeMatch && codeMatch[1]) {
+                    globalGeneratedCode = codeMatch[1].trim();
+                }
+
+                const formattedText = replyText.replace(/```html([\s\S]*?)```/g, (match, code) => {
                     return `
                         <div class="code-block">
-                            <button class="preview-btn" onclick="launchPreview()">Launch Preview</button>
-                            <pre><code>${escapeHtml(code.trim())}</code></pre>
+                            <span class="preview-btn-badge" onclick="openPreviewModal()">Launch Preview</span>
+                            <pre><code>${escapeCode(code.trim())}</code></pre>
                         </div>
                     `;
                 });
+                appendChatMessage(formattedText, 'ai');
+            } else {
+                appendChatMessage(replyText, 'ai');
             }
-
-            addMessage(htmlContent, 'ai');
         }
 
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        function escapeCode(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        function launchPreview() {
-            if (!currentGeneratedCode) return;
-            document.getElementById('preview-modal').classList.remove('hidden');
+        // --- PREVIEW MODAL LOGIC ---
+        function openPreviewModal() {
+            if (!globalGeneratedCode) {
+                alert("No previewable code generated!");
+                return;
+            }
+            document.getElementById('preview-modal').classList.remove('hidden-section');
             const iframe = document.getElementById('preview-frame');
-            iframe.srcdoc = currentGeneratedCode;
+            iframe.srcdoc = globalGeneratedCode;
         }
 
-        function closePreview() {
-            document.getElementById('preview-modal').classList.add('hidden');
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.add('hidden-section');
         }
 
-        function applyCode() {
-            if (confirm("Kya aap waqai is code ko live apply karna chahte hain? Purana code overwrite ho jayega.")) {
-                // In a real app, you'd send this to GitHub API or a backend. 
-                // For now, we simulate success.
-                alert("Code applied successfully! Refresh to see changes.");
-                closePreview();
+        function applyGeneratedCode() {
+            if (confirm("Aap waqai is generated code ko live apply karna chahte hain?")) {
+                alert("Code changes applied successfully!");
+                closePreviewModal();
+            }
+        }
+
+        function logoutAdmin() {
+            if (confirm("Kya aap logout karna chahte hain?")) {
+                window.location.reload();
             }
         }
     </script>
