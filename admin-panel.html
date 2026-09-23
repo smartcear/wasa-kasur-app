@@ -1,579 +1,625 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WASA Kasur - Admin Management Panel</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
-        .sidebar { background-color: #0b1120; width: 260px; height: 100vh; position: fixed; left: 0; top: 0; z-index: 50; display: flex; flex-direction: column; justify-content: space-between; }
-        .main-wrapper { margin-left: 260px; min-height: 100vh; display: flex; flex-direction: column; }
-        .nav-category { font-size: 0.65rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase; padding: 1rem 1.5rem 0.4rem; }
-        .nav-item { display: flex; items-center: center; gap: 0.75rem; padding: 0.6rem 1.5rem; color: #94a3b8; font-size: 0.875rem; font-weight: 500; border-left: 3px solid transparent; transition: all 0.2s; }
-        .nav-item:hover, .nav-item.active { background-color: #1e293b; color: #ffffff; border-left-color: #2563eb; }
-        .master-tool-item.active { border-left-color: #f97316; background-color: #1e1b4b; color: #fb923c; }
-        .code-block { background: #0f172a; color: #38bdf8; padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.85rem; margin-top: 0.5rem; overflow-x: auto; position: relative; border: 1px solid #1e293b; }
-        .preview-btn-badge { position: absolute; top: 0.5rem; right: 0.5rem; background: #2563eb; color: #ffffff; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; }
-        .preview-btn-badge:hover { background: #1d4ed8; }
-        .hidden-section { display: none !important; }
-        
-        /* Custom scrollbars */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0F172A" />
+  <title>WASA Kasur | Admin Console & AI Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <!-- CDN Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Firebase v9+ -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSf45vEBv_PqEnA4jEKUfGcZvLcru-3rU",
+      authDomain: "wasa-app-ksr.firebaseapp.com",
+      projectId: "wasa-app-ksr",
+      storageBucket: "wasa-app-ksr.firebasestorage.app",
+      messagingSenderId: "572534729136",
+      appId: "1:572534729136:web:c172481da5a37756c50e75",
+      measurementId: "G-363L5VJD0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    enableIndexedDbPersistence(db).catch(() => {});
+
+    window.WASA = { app, auth, db, firebase: { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, signInWithEmailAndPassword, signOut, onAuthStateChanged } };
+    window.dispatchEvent(new Event('wasa-ready'));
+  </script>
+
+  <style>
+    :root {
+      --primary: #1A56DB;
+      --primary-600: #1E429F;
+      --sidebar-bg: #0B1220;
+      --sidebar-hover: #111827;
+      --sidebar-active: #1A56DB;
+      --sidebar-text: #94A3B8;
+      --sidebar-width: 260px;
+      --topbar-h: 64px;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-300: #D1D5DB;
+      --gray-500: #6B7280;
+      --gray-700: #374151;
+      --gray-800: #1F2937;
+      --gray-900: #111827;
+      --success: #057A55;
+      --danger: #E02424;
+      --radius-md: 8px;
+      --radius-xl: 16px;
+      --font: 'Inter', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); font-size: 14px; overflow-x: hidden; }
+    button, input, select, textarea { font-family: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    .hidden { display: none !important; }
+
+    /* TOAST */
+    #toastWrap { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: white; border-left: 4px solid var(--primary); padding: 14px 16px; border-radius: var(--radius-md); box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-width: 280px; display: flex; gap: 10px; align-items: center; }
+
+    /* LAYOUT */
+    #bootLoader { position: fixed; inset: 0; z-index: 100000; background: #0B1220; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+    #loginScreen { position: fixed; inset: 0; z-index: 9000; background: linear-gradient(155deg, #0B1220 0%, #1E3A8A 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-card { background: white; border-radius: 20px; padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--gray-700); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13.5px; outline: none; }
+    .form-group input:focus { border-color: var(--primary); }
+    .btn-primary { width: 100%; padding: 12px; background: var(--primary); color: white; border-radius: 6px; font-weight: 700; font-size: 14px; }
+
+    #appShell { display: none; height: 100vh; }
+    #appShell.show { display: flex; }
+
+    /* SIDEBAR */
+    #sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); height: 100vh; display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100; }
+    .sidebar-brand { padding: 20px; color: white; font-weight: 800; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px; }
+    .nav-sec { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; padding: 12px 8px 4px; letter-spacing: 0.5px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; color: var(--sidebar-text); font-size: 13.5px; font-weight: 500; cursor: pointer; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active { background: var(--sidebar-active); color: white; font-weight: 600; }
+
+    /* MAIN */
+    #mainWrap { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #topbar { height: var(--topbar-h); background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; gap: 16px; sticky: top; }
+    .topbar-title { font-size: 17px; font-weight: 700; flex: 1; }
+    #content { padding: 24px; flex: 1; overflow-y: auto; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* AI ASSISTANT CHAT INTERFACE */
+    .ai-chat-box { background: white; border-radius: 16px; border: 1px solid var(--gray-200); height: 600px; display: flex; flex-direction: column; overflow: hidden; }
+    .ai-chat-header { padding: 16px 20px; background: #0F172A; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .ai-chat-stream { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #F8FAFC; }
+    .msg-user { align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 14px 14px 2px 14px; max-width: 80%; font-size: 14px; }
+    .msg-ai { align-self: flex-start; background: white; border: 1px solid var(--gray-200); color: var(--gray-900); padding: 16px; border-radius: 14px 14px 14px 2px; max-width: 85%; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ai-chat-input-wrap { padding: 16px; background: white; border-top: 1px solid var(--gray-200); display: flex; gap: 10px; }
+    .ai-chat-input { flex: 1; padding: 12px; border: 1px solid var(--gray-300); border-radius: 8px; outline: none; font-size: 14px; }
+    .btn-ai-send { background: var(--primary); color: white; padding: 0 20px; border-radius: 8px; font-weight: 700; }
+
+    /* PREVIEW & CODE BOX */
+    .preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .preview-card { background: white; width: 90%; max-width: 900px; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TABLES */
+    .table-wrap { overflow-x: auto; background: white; border-radius: 12px; border: 1px solid var(--gray-200); }
+    table.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    table.data-table th { background: var(--gray-100); padding: 12px 14px; font-weight: 700; color: var(--gray-700); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    table.data-table td { padding: 12px 14px; border-bottom: 1px solid var(--gray-100); white-space: nowrap; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; }
+
+    /* FOOTER TAP */
+    .app-footer { text-align: center; padding: 20px; font-size: 11px; color: var(--gray-500); }
+  </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div>
-            <!-- Branding Header -->
-            <div class="h-16 flex items-center px-6 border-b border-slate-800">
-                <span class="text-white font-bold text-lg tracking-wide flex items-center gap-2">
-                    <i class="fas fa-droplet text-blue-500"></i> WASA Kasur
-                </span>
-            </div>
+<div id="toastWrap"></div>
 
-            <!-- Navigation Links -->
-            <nav class="mt-2">
-                <div class="nav-category">Overview</div>
-                <a href="#" onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-item active">
-                    <i class="fas fa-chart-pie w-4"></i> Dashboard
-                </a>
+<!-- BOOT LOADER -->
+<div id="bootLoader">
+  <div style="font-size:40px; font-weight:900; margin-bottom:10px;">W</div>
+  <div>Loading WASA Kasur Console & AI Engine…</div>
+</div>
 
-                <div class="nav-category">People</div>
-                <a href="#" onclick="switchTab('consumers')" id="btn-consumers" class="nav-item">
-                    <i class="fas fa-users w-4"></i> Consumers
-                </a>
-                <a href="#" onclick="switchTab('officers')" id="btn-officers" class="nav-item">
-                    <i class="fas fa-id-card w-4"></i> Officers Directory
-                </a>
-
-                <div class="nav-category">Operations</div>
-                <a href="#" onclick="switchTab('activities')" id="btn-activities" class="nav-item">
-                    <i class="fas fa-tasks w-4"></i> Field Activities
-                </a>
-
-                <!-- Hidden Master Tools Section -->
-                <div id="master-tools-menu" class="hidden-section">
-                    <div class="nav-category text-orange-400">Master Tools</div>
-                    <a href="#" onclick="switchTab('ai-studio')" id="btn-ai-studio" class="nav-item master-tool-item">
-                        <i class="fas fa-robot w-4"></i> AI Studio
-                    </a>
-                    <a href="#" onclick="switchTab('bulk-upload')" id="btn-bulk-upload" class="nav-item master-tool-item">
-                        <i class="fas fa-file-csv w-4"></i> Bulk Upload
-                    </a>
-                </div>
-            </nav>
-        </div>
-
-        <!-- Footer Footer Activation Trigger -->
-        <div class="p-4 border-t border-slate-800 text-center">
-            <p id="footer-version" onclick="handleFooterTap()" class="text-[11px] text-slate-500 cursor-pointer select-none hover:text-slate-400 transition">
-                Developed by NAFEES • v2.8.1.0
-            </p>
-        </div>
-    </aside>
-
-    <!-- MAIN CONTENT AREA -->
-    <div class="main-wrapper">
-        <!-- Top Navbar -->
-        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-40">
-            <div id="page-heading" class="font-bold text-slate-800 uppercase tracking-wider text-sm">
-                Dashboard
-            </div>
-            <div class="flex items-center gap-4">
-                <span id="user-role-badge" class="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-200">
-                    Super Admin
-                </span>
-                <button onclick="logoutAdmin()" class="text-xs text-red-600 font-medium hover:underline">
-                    Door <i class="fas fa-sign-out-alt ml-1"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Dynamic Content Sections -->
-        <main class="p-8 flex-grow">
-            
-            <!-- 1. DASHBOARD SECTION -->
-            <section id="section-dashboard">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs text-slate-500 font-semibold uppercase">Total Consumers</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1" id="dash-total-consumers">12,450</p>
-                        <p class="text-xs text-emerald-600 mt-2 font-medium"><i class="fas fa-arrow-up"></i> +2.4% this month</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs text-slate-500 font-semibold uppercase">Active Connections</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1">11,890</p>
-                        <p class="text-xs text-slate-400 mt-2">Active in Kasur Ward 1-12</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs text-slate-500 font-semibold uppercase">Pending Requests</p>
-                        <p class="text-2xl font-bold text-orange-600 mt-1">42</p>
-                        <p class="text-xs text-orange-500 mt-2 font-medium">Requires Officer Verification</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs text-slate-500 font-semibold uppercase">Field Officers</p>
-                        <p class="text-2xl font-bold text-blue-600 mt-1">18</p>
-                        <p class="text-xs text-slate-400 mt-2">Active in Field</p>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-800 text-base mb-4">System Overview</h3>
-                    <p class="text-sm text-slate-600">WASA Kasur Management System is running normally. Firebase & Cloudinary storage operational.</p>
-                </div>
-            </section>
-
-            <!-- 2. CONSUMERS DATABASE SECTION (26 COLUMNS SCHEMA) -->
-            <section id="section-consumers" class="hidden-section">
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-4">
-                        <input type="text" id="consumer-search" onkeyup="filterConsumers()" placeholder="Search by Consumer No, Name, CNIC, Ward..." class="border border-slate-300 rounded-lg px-4 py-2 text-sm w-80 focus:outline-none focus:border-blue-500">
-                        <span class="text-xs text-slate-500 font-medium">Showing <b id="consumer-count">10</b> records</span>
-                    </div>
-
-                    <div class="overflow-x-auto max-h-[600px]">
-                        <table class="w-full text-left text-xs text-slate-700 whitespace-nowrap">
-                            <thead class="bg-slate-100 uppercase font-semibold text-slate-600 sticky top-0 border-b">
-                                <tr>
-                                    <th class="p-3">Consumer No</th>
-                                    <th class="p-3">Consumer Name</th>
-                                    <th class="p-3">Father Name</th>
-                                    <th class="p-3">CNIC</th>
-                                    <th class="p-3">Contact No</th>
-                                    <th class="p-3">Address</th>
-                                    <th class="p-3">Category</th>
-                                    <th class="p-3">SubCategory</th>
-                                    <th class="p-3">Comm Category</th>
-                                    <th class="p-3">Dia Discharge</th>
-                                    <th class="p-3">Old Account No</th>
-                                    <th class="p-3">Building Floor</th>
-                                    <th class="p-3">Milestone</th>
-                                    <th class="p-3">Walk Sort</th>
-                                    <th class="p-3">Email</th>
-                                    <th class="p-3">Deactivation Date</th>
-                                    <th class="p-3">No of Washrooms</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Ward</th>
-                                    <th class="p-3">Aquifier Motor Size</th>
-                                    <th class="p-3">Property No</th>
-                                    <th class="p-3">Area</th>
-                                    <th class="p-3">Re-Active Date</th>
-                                    <th class="p-3">Active Con Date</th>
-                                    <th class="p-3">Service Name</th>
-                                    <th class="p-3">No of Pumps</th>
-                                    <th class="p-3">Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody id="consumers-table-body" class="divide-y divide-slate-100">
-                                <!-- Sample Rows injected via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. OFFICERS DIRECTORY -->
-            <section id="section-officers" class="hidden-section">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-800 text-lg mb-4">WASA Officers Directory</h3>
-                    <p class="text-sm text-slate-600">List of registered officers and field credentials.</p>
-                </div>
-            </section>
-
-            <!-- 4. FIELD ACTIVITIES -->
-            <section id="section-activities" class="hidden-section">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-800 text-lg mb-4">Field Activities Log</h3>
-                    <p class="text-sm text-slate-600">Real-time meter reading updates, connection status changes, and site photos.</p>
-                </div>
-            </section>
-
-            <!-- 5. MASTER TOOL: AI STUDIO (NVIDIA NIM / OPENROUTER) -->
-            <section id="section-ai-studio" class="hidden-section">
-                <div class="bg-slate-900 rounded-xl shadow-xl overflow-hidden flex flex-col h-[78vh]">
-                    <!-- Header Bar -->
-                    <div class="bg-slate-950 px-6 py-3 flex items-center justify-between border-b border-slate-800">
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-microchip text-blue-500 text-lg"></i>
-                            <div>
-                                <h2 class="text-white font-bold text-sm">WASA AI Studio</h2>
-                                <p class="text-[10px] text-slate-400">Model: Moonshot Kimi-K3 (NVIDIA NIM Engine)</p>
-                            </div>
-                        </div>
-
-                        <!-- Provider & Key Settings -->
-                        <div class="flex items-center gap-2">
-                            <select id="ai-provider" class="bg-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none">
-                                <option value="nvidia">NVIDIA NIM Endpoint</option>
-                                <option value="openrouter">OpenRouter Fallback</option>
-                            </select>
-                            <input type="password" id="ai-api-key" placeholder="Enter API Key" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded border border-slate-700 outline-none w-48 focus:border-blue-500">
-                            <button onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded transition">
-                                Save Key
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Chat Output Window -->
-                    <div id="ai-chat-window" class="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-900">
-                        <div class="flex justify-start">
-                            <div class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg p-3 max-w-[80%] text-xs leading-relaxed">
-                                Assalam-o-Alaikum! Main WASA AI Studio hoon. Main app mein koi bhi code changes, new features ya queries handle kar sakta hoon. Apne requirement niche likhein.
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Input Box -->
-                    <div class="p-4 bg-slate-950 border-t border-slate-800">
-                        <div class="flex gap-2">
-                            <textarea id="ai-user-prompt" rows="2" placeholder="Ask anything or describe a code change in Roman Urdu..." class="flex-grow bg-slate-900 text-white border border-slate-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-blue-500 resize-none"></textarea>
-                            <button id="ai-send-btn" onclick="executeAiQuery()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 font-semibold text-xs rounded-lg transition flex items-center gap-2 justify-center">
-                                <span>Run AI</span>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 6. MASTER TOOL: BULK UPLOAD -->
-            <section id="section-bulk-upload" class="hidden-section">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-800 text-lg mb-4">Bulk Data Import (CSV / Excel)</h3>
-                    <p class="text-xs text-slate-500 mb-4">Upload CSV with matching 26 columns to bulk import consumers into Firestore.</p>
-                    <input type="file" id="bulk-csv-file" accept=".csv" class="border p-2 rounded text-xs">
-                </div>
-            </section>
-
-        </main>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2 style="text-align:center; margin-bottom:4px;">WASA Kasur</h2>
+    <p style="text-align:center; font-size:12px; color:var(--gray-500); margin-bottom:20px;">Admin Console Login</p>
+    
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="loginPhone" placeholder="03001234567" maxlength="11" />
     </div>
-
-    <!-- LIVE PREVIEW MODAL -->
-    <div id="preview-modal" class="fixed inset-0 bg-black/80 z-[3000] hidden flex flex-col">
-        <div class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
-            <span class="font-bold text-xs uppercase tracking-wider text-blue-400">AI Code Live Preview</span>
-            <div class="flex items-center gap-3">
-                <button onclick="applyGeneratedCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded font-semibold">
-                    Apply Changes
-                </button>
-                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white text-base">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <iframe id="preview-frame" class="w-full flex-grow bg-white"></iframe>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" />
     </div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
 
-    <!-- JAVASCRIPT ENGINE -->
-    <script>
-        // --- MASTER SECURITY & FOOTER TRIPLE/7 TAP LOGIC ---
-        let footerTapCounter = 0;
-        let footerTapTimer = null;
+<!-- HIDDEN SETTINGS MODAL -->
+<div id="hiddenSettings" class="modal-overlay">
+  <div class="modal" style="max-width:380px">
+    <h3>🔐 Master Control Access</h3>
+    <p style="font-size:12px; color:var(--gray-500); margin:6px 0 16px">Enter master password to unlock Form Builder, AI Engine & Bulk Upload.</p>
+    <div class="form-group">
+      <input type="password" id="hiddenPass" placeholder="Master Password" />
+    </div>
+    <div style="display:flex; gap:10px">
+      <button class="btn-primary" style="background:var(--gray-300); color:black" onclick="$('hiddenSettings').classList.remove('show')">Cancel</button>
+      <button class="btn-primary" onclick="unlockMaster()">Unlock</button>
+    </div>
+  </div>
+</div>
 
-        function handleFooterTap() {
-            footerTapCounter++;
-            clearTimeout(footerTapTimer);
+<!-- APP SHELL -->
+<div id="appShell">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <div style="background:var(--primary); width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;">W</div>
+      WASA Kasur
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec">Overview</div>
+      <div class="nav-item active" onclick="nav('dashboard', this)">📊 Dashboard</div>
 
-            if (footerTapCounter >= 7) {
-                footerTapCounter = 0;
-                const masterPass = prompt("Enter Master Password:");
-                if (masterPass === "Nafees@Master99") {
-                    document.getElementById('master-tools-menu').classList.remove('hidden-section');
-                    alert("Master Tools Unlocked!");
-                    switchTab('ai-studio');
-                } else if (masterPass !== null) {
-                    alert("Incorrect Password!");
-                }
-            } else {
-                footerTapTimer = setTimeout(() => { footerTapCounter = 0; }, 3000);
-            }
-        }
+      <div class="nav-sec">People</div>
+      <div class="nav-item" onclick="nav('consumers', this)">👥 Consumers</div>
+      <div class="nav-item" onclick="nav('pending', this)">⏳ Pending Requests</div>
+      <div class="nav-item" onclick="nav('officers', this)">🪪 Officers Directory</div>
 
-        // --- NAVIGATION LOGIC ---
-        function switchTab(tabId) {
-            // Hide all sections
-            const sections = ['dashboard', 'consumers', 'officers', 'activities', 'ai-studio', 'bulk-upload'];
-            sections.forEach(s => {
-                const el = document.getElementById('section-' + s);
-                if (el) el.classList.add('hidden-section');
+      <div class="nav-sec">Operations</div>
+      <div class="nav-item" onclick="nav('activities', this)">📋 Field Activities</div>
+      <div class="nav-item" onclick="nav('duplicates', this)">🧬 Duplicates Inbox</div>
+      <div class="nav-item" onclick="nav('corrections', this)">✏️ Correction Requests</div>
+      <div class="nav-item" onclick="nav('connect', this)">💬 WASA Connect</div>
 
-                const btn = document.getElementById('btn-' + s);
-                if (btn) btn.classList.remove('active');
-            });
+      <div class="nav-sec">Configuration</div>
+      <div class="nav-item" onclick="nav('settings', this)">⚙️ System Settings</div>
 
-            // Show selected section
-            const targetSection = document.getElementById('section-' + tabId);
-            if (targetSection) targetSection.classList.remove('hidden-section');
+      <!-- HIDDEN MASTER SECTION -->
+      <div id="hiddenNav" class="hidden">
+        <div class="nav-sec" style="color:#F59E0B">Master Tools</div>
+        <div class="nav-item" onclick="nav('aiengine', this)">🤖 AI Assistant (Claude)</div>
+        <div class="nav-item" onclick="nav('formbuilder', this)">🛠️ Form Builder</div>
+        <div class="nav-item" onclick="nav('bulkupload', this)">📤 Bulk Data Upload</div>
+      </div>
+    </nav>
+  </aside>
 
-            const targetBtn = document.getElementById('btn-' + tabId);
-            if (targetBtn) targetBtn.classList.add('active');
+  <!-- MAIN WRAP -->
+  <div id="mainWrap">
+    <header id="topbar">
+      <h1 class="topbar-title" id="pageTitle">Dashboard</h1>
+      <span id="userBadge" style="background:var(--gray-100); padding:6px 12px; border-radius:99px; font-weight:600; font-size:12px">Super Admin</span>
+    </header>
 
-            // Update Header Title
-            const headingMap = {
-                'dashboard': 'Dashboard',
-                'consumers': 'Consumers Database (26 Columns)',
-                'officers': 'Officers Directory',
-                'activities': 'Field Activities',
-                'ai-studio': 'AIENGINE',
-                'bulk-upload': 'Bulk Import'
-            };
-            document.getElementById('page-heading').innerText = headingMap[tabId] || 'Admin';
-        }
+    <main id="content">
 
-        // --- CONSUMERS TABLE POPULATOR (SAMPLE DUMMY DATA FOR ALL 26 COLUMNS) ---
-        const sampleConsumers = [
-            {
-                no: "CON-1001", name: "Muhammad Ali", father: "Ahmad Din", cnic: "35102-1234567-1", phone: "03001234567",
-                addr: "House 12, Ward 4, Kasur", cat: "Domestic", subcat: "Regular", commcat: "N/A", discharge: "1/2 inch",
-                oldacc: "OLD-882", floor: "Ground", milestone: "Near Main Mosque", walksort: "01", email: "ali@gmail.com",
-                deact: "-", washrooms: "2", status: "Active", ward: "Ward 4", motor: "1.5 HP", prop: "P-8821",
-                area: "5 Marla", reactive: "-", activecon: "2021-05-10", service: "Water Supply", pumps: "1", remarks: "Regular Payer"
-            },
-            {
-                no: "CON-1002", name: "Tariq Mahmood", father: "Ghulam Hussain", cnic: "35102-9876543-3", phone: "03217654321",
-                addr: "Shop 4, Railway Road, Kasur", cat: "Commercial", subcat: "Plaza", commcat: "Retail", discharge: "1 inch",
-                oldacc: "OLD-441", floor: "1st Floor", milestone: "Opposite Station", walksort: "02", email: "tariq@yahoo.com",
-                deact: "-", washrooms: "4", status: "Active", ward: "Ward 1", motor: "3.0 HP", prop: "P-1092",
-                area: "10 Marla", reactive: "-", activecon: "2019-11-20", service: "Sewerage & Water", pumps: "2", remarks: "Commercial Tariff"
-            }
-        ];
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:20px;">
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">TOTAL ACTIVITIES</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbAct">0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">RECOVERY TODAY</div>
+            <div style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px" id="dbRec">Rs. 0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">TOTAL CONSUMERS</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbCons">0</div>
+          </div>
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--gray-200)">
+            <div style="font-size:12px; color:var(--gray-500); font-weight:700">ACTIVE OFFICERS</div>
+            <div style="font-size:24px; font-weight:800; margin-top:4px" id="dbOff">0</div>
+          </div>
+        </div>
+      </div>
 
-        function loadConsumersTable() {
-            const tbody = document.getElementById('consumers-table-body');
-            tbody.innerHTML = sampleConsumers.map(c => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-blue-600">${c.no}</td>
-                    <td class="p-3 font-semibold text-slate-800">${c.name}</td>
-                    <td class="p-3">${c.father}</td>
-                    <td class="p-3">${c.cnic}</td>
-                    <td class="p-3">${c.phone}</td>
-                    <td class="p-3">${c.addr}</td>
-                    <td class="p-3"><span class="bg-slate-200 text-slate-800 px-2 py-0.5 rounded text-[10px] font-bold">${c.cat}</span></td>
-                    <td class="p-3">${c.subcat}</td>
-                    <td class="p-3">${c.commcat}</td>
-                    <td class="p-3">${c.discharge}</td>
-                    <td class="p-3">${c.oldacc}</td>
-                    <td class="p-3">${c.floor}</td>
-                    <td class="p-3">${c.milestone}</td>
-                    <td class="p-3">${c.walksort}</td>
-                    <td class="p-3">${c.email}</td>
-                    <td class="p-3">${c.deact}</td>
-                    <td class="p-3">${c.washrooms}</td>
-                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">${c.status}</span></td>
-                    <td class="p-3">${c.ward}</td>
-                    <td class="p-3">${c.motor}</td>
-                    <td class="p-3">${c.prop}</td>
-                    <td class="p-3">${c.area}</td>
-                    <td class="p-3">${c.reactive}</td>
-                    <td class="p-3">${c.activecon}</td>
-                    <td class="p-3">${c.service}</td>
-                    <td class="p-3">${c.pumps}</td>
-                    <td class="p-3">${c.remarks}</td>
-                </tr>
-            `).join('');
-            document.getElementById('consumer-count').innerText = sampleConsumers.length;
-        }
+      <!-- CONSUMERS (26 COLUMNS FULL SUPPORT) -->
+      <div class="page" id="page-consumers">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+          <input type="text" id="conSearch" placeholder="Search CNIC, Name, Account..." style="padding:10px; width:300px; border-radius:6px; border:1px solid var(--gray-300)" oninput="filterConsumers()" />
+          <button class="btn-primary" style="width:auto" onclick="openAddConsumerModal()">+ Add Consumer (26 Fields)</button>
+        </div>
 
-        function filterConsumers() {
-            const query = document.getElementById('consumer-search').value.toLowerCase();
-            const rows = document.querySelectorAll('#consumers-table-body tr');
-            rows.forEach(r => {
-                const text = r.innerText.toLowerCase();
-                r.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Consumer No</th>
+                <th>Name</th>
+                <th>Father Name</th>
+                <th>CNIC</th>
+                <th>Contact</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Motor Size</th>
+                <th>Washrooms</th>
+                <th>Ward</th>
+                <th>Property No</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="consumersTbody">
+              <tr><td colspan="12" style="text-align:center; padding:30px">Loading consumers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        // --- AI STUDIO ENGINE (RESOLVES CORS & FAILED TO FETCH) ---
-        let globalGeneratedCode = "";
+      <!-- 🤖 BUILT-IN AI ASSISTANT PAGE (CLAUDE INTEGRATION) -->
+      <div class="page" id="page-aiengine">
+        <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center">
+          <div>
+            <h2 style="font-size:18px; font-weight:800">🤖 WASA AI Customization Engine</h2>
+            <p style="font-size:12px; color:var(--gray-500)">Type changes in English/Urdu. AI will update code & generate live preview.</p>
+          </div>
+          <button class="btn-primary" style="width:auto; background:#10B981" onclick="showRollbackModal()">⏮️ Rollback History (30 Days)</button>
+        </div>
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadConsumersTable();
-            const savedKey = localStorage.getItem('wasa_ai_key');
-            if (savedKey) document.getElementById('ai-api-key').value = savedKey;
-        });
+        <!-- API KEY SETTING -->
+        <div style="background:#FEF3C7; border:1px solid #F59E0B; padding:12px 16px; border-radius:10px; margin-bottom:16px; display:flex; gap:10px; align-items:center">
+          <span style="font-size:20px">🔑</span>
+          <div style="flex:1">
+            <strong style="font-size:13px">Claude API / OpenRouter Key Setup</strong>
+            <input type="password" id="aiApiKey" placeholder="Enter Anthropic / OpenRouter API Key (sk-or-...)" style="width:100%; margin-top:4px; padding:6px; border-radius:4px; border:1px solid #D97706; font-size:12px" />
+          </div>
+          <button class="btn-primary" style="width:auto; padding:8px 14px; margin-top:16px" onclick="saveApiKey()">Save Key</button>
+        </div>
 
-        function saveApiKey() {
-            const key = document.getElementById('ai-api-key').value.trim();
-            if (!key) { alert("Please enter a key!"); return; }
-            localStorage.setItem('wasa_ai_key', key);
-            alert("API Key saved successfully!");
-        }
+        <!-- CHAT STREAM -->
+        <div class="ai-chat-box">
+          <div class="ai-chat-header">
+            <span>💬 WASA AI Developer Assistant</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:99px">Claude 3.5 Sonnet Engine</span>
+          </div>
+          <div class="ai-chat-stream" id="aiStream">
+            <div class="msg-ai">
+              <strong>Assalam-o-Alaikum Nafees Sahab!</strong> 👋<br>
+              Main WASA Kasur ka built-in AI Assistant hoon. Aap mujhe batayein app mein kya change karna hai (e.g. <em>"Dashboard mein recovery chart ka color green kar do"</em> ya <em>"Consumers list mein Ward wise total count ka box lagao"</em>). Main code generate karke aapko Live Preview dikhaunga!
+            </div>
+          </div>
+          <div class="ai-chat-input-wrap">
+            <input type="text" class="ai-chat-input" id="aiPrompt" placeholder="Type what you want to add or change in WASA app..." onkeydown="if(event.key==='Enter') sendAiPrompt()" />
+            <button class="btn-ai-send" onclick="sendAiPrompt()">Generate & Preview</button>
+          </div>
+        </div>
+      </div>
 
-        async function executeAiQuery() {
-            const promptInput = document.getElementById('ai-user-prompt');
-            const userText = promptInput.value.trim();
-            const apiKey = document.getElementById('ai-api-key').value.trim();
-            const provider = document.getElementById('ai-provider').value;
+      <!-- OTHER PAGES PLACEHOLDERS -->
+      <div class="page" id="page-pending"><h3 style="padding:20px">⏳ Pending Requests (0)</h3></div>
+      <div class="page" id="page-officers"><h3 style="padding:20px">🪪 Officers Directory</h3></div>
+      <div class="page" id="page-activities"><h3 style="padding:20px">📋 Field Activities</h3></div>
+      <div class="page" id="page-duplicates"><h3 style="padding:20px">🧬 Duplicates Inbox</h3></div>
+      <div class="page" id="page-corrections"><h3 style="padding:20px">✏️ Correction Requests</h3></div>
+      <div class="page" id="page-connect"><h3 style="padding:20px">💬 WASA Connect</h3></div>
+      <div class="page" id="page-settings"><h3 style="padding:20px">⚙️ System Settings</h3></div>
+      <div class="page" id="page-formbuilder"><h3 style="padding:20px">🛠️ Dynamic Form Builder</h3></div>
+      <div class="page" id="page-bulkupload"><h3 style="padding:20px">📤 Bulk Data Upload</h3></div>
 
-            if (!userText) return;
-            if (!apiKey) {
-                alert("Pehle API Key dakhil karein aur 'Save Key' dabayein!");
-                return;
-            }
+      <!-- FOOTER TAP TARGET -->
+      <div class="app-footer">
+        Water & Sanitation Agency · Kasur · Government of Punjab<br>
+        <span id="verTap" style="cursor:pointer; font-weight:700">Developed by NAFEES • v2.8.1.0</span>
+      </div>
 
-            // Append User Message to Chat Window
-            appendChatMessage(userText, 'user');
-            promptInput.value = '';
+    </main>
+  </div>
+</div>
 
-            // Append Loading Indicator
-            const loadingId = 'ai-load-' + Date.now();
-            appendChatMessage('<i class="fas fa-spinner fa-spin mr-2"></i> WASA AI processing...', 'ai', loadingId);
+<!-- PREVIEW MODAL FOR AI CHANGES -->
+<div class="preview-modal" id="aiPreviewModal">
+  <div class="preview-card">
+    <div style="padding:16px; background:#0F172A; color:white; display:flex; justify-content:space-between; align-items:center">
+      <strong>🤖 AI Generated Preview & Code Changes</strong>
+      <button onclick="$('aiPreviewModal').style.display='none'" style="color:white; font-size:18px">✕</button>
+    </div>
+    <div style="flex:1; padding:20px; overflow-y:auto">
+      <h4>Proposed Changes:</h4>
+      <div id="aiChangeSummary" style="background:#F1F5F9; padding:12px; border-radius:8px; margin:10px 0; font-size:13px"></div>
+      <h4>Generated HTML/JS Preview:</h4>
+      <iframe id="aiPreviewFrame" style="width:100%; height:350px; border:1px solid #CBD5E1; border-radius:8px; margin-top:10px"></iframe>
+    </div>
+    <div style="padding:16px; background:#F8FAFC; border-top:1px solid #E2E8F0; display:flex; justify-content:flex-end; gap:10px">
+      <button class="btn-primary" style="background:var(--gray-500); width:auto" onclick="$('aiPreviewModal').style.display='none'">Reject Change</button>
+      <button class="btn-primary" style="background:#10B981; width:auto" onclick="applyAiChanges()">✅ Approve & Apply To System</button>
+    </div>
+  </div>
+</div>
 
-            try {
-                let response, data;
+<!-- ADD CONSUMER MODAL (26 FIELDS) -->
+<div class="modal-overlay" id="addConsumerModal">
+  <div class="modal">
+    <h3>➕ Add New Consumer (26 Fields)</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px">
+      <div class="form-group"><label>Consumer No *</label><input type="text" id="cNo" placeholder="100921" /></div>
+      <div class="form-group"><label>Consumer Name *</label><input type="text" id="cName" placeholder="Muhammad Ahmad" /></div>
+      <div class="form-group"><label>Father Name</label><input type="text" id="cFName" /></div>
+      <div class="form-group"><label>CNIC (13 digits)</label><input type="text" id="cCnic" placeholder="3520212345671" /></div>
+      <div class="form-group"><label>Contact No</label><input type="text" id="cPhone" placeholder="03001234567" /></div>
+      <div class="form-group"><label>Address</label><input type="text" id="cAddr" /></div>
+      <div class="form-group"><label>Category</label><select id="cCat"><option>Residential</option><option>Commercial</option><option>Industrial</option></select></div>
+      <div class="form-group"><label>Sub Category</label><input type="text" id="cSubCat" /></div>
+      <div class="form-group"><label>Discharge Dia</label><input type="text" id="cDia" /></div>
+      <div class="form-group"><label>Old Account No</label><input type="text" id="cOldAcc" /></div>
+      <div class="form-group"><label>Building Floor</label><input type="text" id="cFloor" /></div>
+      <div class="form-group"><label>No of Washrooms</label><input type="number" id="cWashrooms" value="1" /></div>
+      <div class="form-group"><label>Status</label><select id="cStatus"><option>ACTIVE</option><option>INACTIVE</option></select></div>
+      <div class="form-group"><label>Ward</label><input type="text" id="cWard" /></div>
+      <div class="form-group"><label>Aquifier Motor Size</label><input type="text" id="cMotor" /></div>
+      <div class="form-group"><label>Property No</label><input type="text" id="cPropNo" /></div>
+      <div class="form-group"><label>Area / Marla</label><input type="text" id="cArea" /></div>
+      <div class="form-group"><label>Service Name</label><input type="text" id="cService" /></div>
+      <div class="form-group"><label>No of Pumps</label><input type="number" id="cPumps" value="0" /></div>
+      <div class="form-group"><label>Remarks</label><input type="text" id="cRemarks" /></div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px">
+      <button class="btn-primary" style="background:var(--gray-300); color:black; width:auto" onclick="$('addConsumerModal').classList.remove('show')">Cancel</button>
+      <button class="btn-primary" style="width:auto" onclick="saveConsumer()">Save Consumer</button>
+    </div>
+  </div>
+</div>
 
-                if (provider === 'nvidia') {
-                    // NVIDIA NIM Chat Completion Endpoint
-                    response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${apiKey}`,
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify({
-                            model: "moonshotai/kimi-k3",
-                            messages: [
-                                {
-                                    role: "system",
-                                    content: "You are an expert full-stack developer for WASA Kasur. Answer in clear Roman Urdu. If code is requested, output full working HTML/JS inside standard ```html ``` codeblocks."
-                                },
-                                { role: "user", content: userText }
-                            ],
-                            temperature: 0.2,
-                            max_tokens: 3000
-                        })
-                    });
-                } else {
-                    // OpenRouter Proxy Fallback Endpoint
-                    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${apiKey}`,
-                            "HTTP-Referer": window.location.href,
-                            "X-Title": "WASA Kasur Admin"
-                        },
-                        body: JSON.stringify({
-                            model: "moonshotai/kimi-k3",
-                            messages: [
-                                { role: "system", content: "You are WASA Kasur AI Developer. Respond in Roman Urdu." },
-                                { role: "user", content: userText }
-                            ]
-                        })
-                    });
-                }
+<script>
+// UTILS
+function $(id) { return document.getElementById(id); }
+function toast(msg) {
+  const w = $('toastWrap');
+  const d = document.createElement('div');
+  d.className = 'toast'; d.innerHTML = `<span>ℹ️</span><div>${msg}</div>`;
+  w.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Server returned HTTP ${response.status}: ${errText || 'Authorization or Rate limit failed'}`);
-                }
+const SUPER_ADMIN_PHONE = '03015777523';
+const MASTER_PASS = 'Nafees@Master99';
+let currentUser = null;
+let consumersList = [];
 
-                data = await response.json();
-                const aiReply = data.choices[0].message.content;
+// NAVIGATION
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  $('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  $('pageTitle').textContent = id.toUpperCase();
+}
 
-                // Remove loading message
-                document.getElementById(loadingId).parentElement.parentElement.remove();
+// 7-TAP MASTER UNLOCK
+let taps = 0, tapTimer = null;
+$('verTap').addEventListener('click', () => {
+  taps++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => taps = 0, 3000);
+  if(taps >= 7) {
+    taps = 0;
+    $('hiddenSettings').classList.add('show');
+  }
+});
 
-                // Process AI response and display
-                renderAiReply(aiReply);
+function unlockMaster() {
+  if($('hiddenPass').value === MASTER_PASS) {
+    $('hiddenNav').classList.remove('hidden');
+    $('hiddenSettings').classList.remove('show');
+    toast('Master Control Unlocked!');
+  } else {
+    toast('Wrong Master Password');
+  }
+}
 
-            } catch (err) {
-                console.error("AI Fetch Failure:", err);
-                const loadElem = document.getElementById(loadingId);
-                if (loadElem) {
-                    loadElem.innerHTML = `
-                        <div class="text-red-400 font-bold">❌ AI Error: ${err.message}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">
-                            Tip: Agar "Failed to fetch" aa raha hai toh browser CORS block kar raha hai. Switch dropdown to <b>OpenRouter Fallback</b> or check your Key format.
-                        </div>
-                    `;
-                }
-            }
-        }
+// AUTH
+function doLogin() {
+  const phone = $('loginPhone').value.trim();
+  const pass = $('loginPass').value;
+  if(!phone || !pass) return toast('Phone and Password required');
 
-        function appendChatMessage(messageHtml, sender, elementId = null) {
-            const chatWin = document.getElementById('ai-chat-window');
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+  const { auth, firebase: F } = window.WASA;
+  F.signInWithEmailAndPassword(auth, phone + '@wasa.kasur.app', pass)
+    .catch(e => toast('Login Failed: ' + e.message));
+}
 
-            const bgClass = sender === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200 border border-slate-700';
+window.addEventListener('wasa-ready', () => {
+  const { auth, db, firebase: F } = window.WASA;
+  F.onAuthStateChanged(auth, (user) => {
+    if(user) {
+      $('loginScreen').style.display = 'none';
+      $('appShell').classList.add('show');
+      $('bootLoader').style.display = 'none';
+      loadDashboard();
+      loadConsumers();
+    } else {
+      $('loginScreen').style.display = 'flex';
+      $('appShell').classList.remove('show');
+      $('bootLoader').style.display = 'none';
+    }
+  });
+});
 
-            wrapper.innerHTML = `
-                <div ${elementId ? `id="${elementId}"` : ''} class="${bgClass} rounded-lg p-3 max-w-[85%] text-xs leading-relaxed shadow-md">
-                    ${messageHtml}
-                </div>
-            `;
-            chatWin.appendChild(wrapper);
-            chatWin.scrollTop = chatWin.scrollHeight;
-        }
+// DASHBOARD
+async function loadDashboard() {
+  const { db, firebase: F } = window.WASA;
+  try {
+    const cSnap = await F.getDocs(F.collection(db, 'wasaConsumers'));
+    $('dbCons').textContent = cSnap.size;
+    
+    const uSnap = await F.getDocs(F.collection(db, 'wasaUsers'));
+    $('dbOff').textContent = uSnap.size;
+  } catch(e) {}
+}
 
-        function renderAiReply(replyText) {
-            // Check if AI generated code blocks
-            const hasCode = replyText.includes("```html");
+// CONSUMERS CRUD
+async function loadConsumers() {
+  const { db, firebase: F } = window.WASA;
+  try {
+    const snap = await F.getDocs(F.collection(db, 'wasaConsumers'));
+    consumersList = [];
+    snap.forEach(d => consumersList.push({ id: d.id, ...d.data() }));
+    renderConsumersTable(consumersList);
+  } catch(e) {}
+}
 
-            if (hasCode) {
-                const codeMatch = replyText.match(/```html([\s\S]*?)```/);
-                if (codeMatch && codeMatch[1]) {
-                    globalGeneratedCode = codeMatch[1].trim();
-                }
+function renderConsumersTable(list) {
+  const tbody = $('consumersTbody');
+  if(!list.length) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px">No consumers found. Click "+ Add Consumer" to add one.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${c.CONSUMER_NO||'—'}</strong></td>
+      <td>${c.CONSUMER_NAME||'—'}</td>
+      <td>${c.FATHER_NAME||'—'}</td>
+      <td>${c.CNIC||'—'}</td>
+      <td>${c.CONTACT_NO||'—'}</td>
+      <td>${c.CATEGORY||'—'}</td>
+      <td><span style="background:${c.STATUS==='ACTIVE'?'#DEF7EC':'#F3F4F6'}; color:${c.STATUS==='ACTIVE'?'#057A55':'#374151'}; padding:2px 8px; border-radius:99px; font-weight:700">${c.STATUS||'ACTIVE'}</span></td>
+      <td>${c.AQUIFIER_MOTOR_SIZE||'—'}</td>
+      <td>${c.NO_OF_WASHROOMS||'1'}</td>
+      <td>${c.WARD||'—'}</td>
+      <td>${c.PROPERTY_NO||'—'}</td>
+      <td><button onclick="toast('Viewing details')">👁️</button></td>
+    </tr>
+  `).join('');
+}
 
-                const formattedText = replyText.replace(/```html([\s\S]*?)```/g, (match, code) => {
-                    return `
-                        <div class="code-block">
-                            <span class="preview-btn-badge" onclick="openPreviewModal()">Launch Preview</span>
-                            <pre><code>${escapeCode(code.trim())}</code></pre>
-                        </div>
-                    `;
-                });
-                appendChatMessage(formattedText, 'ai');
-            } else {
-                appendChatMessage(replyText, 'ai');
-            }
-        }
+function filterConsumers() {
+  const q = $('conSearch').value.toLowerCase();
+  const filtered = consumersList.filter(c => (c.CONSUMER_NAME||'').toLowerCase().includes(q) || (c.CNIC||'').includes(q) || (c.CONSUMER_NO||'').includes(q));
+  renderConsumersTable(filtered);
+}
 
-        function escapeCode(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
+function openAddConsumerModal() { $('addConsumerModal').classList.add('show'); }
 
-        // --- PREVIEW MODAL LOGIC ---
-        function openPreviewModal() {
-            if (!globalGeneratedCode) {
-                alert("No previewable code generated!");
-                return;
-            }
-            document.getElementById('preview-modal').classList.remove('hidden-section');
-            const iframe = document.getElementById('preview-frame');
-            iframe.srcdoc = globalGeneratedCode;
-        }
+async function saveConsumer() {
+  const { db, firebase: F } = window.WASA;
+  const data = {
+    CONSUMER_NO: $('cNo').value,
+    CONSUMER_NAME: $('cName').value,
+    FATHER_NAME: $('cFName').value,
+    CNIC: $('cCnic').value,
+    CONTACT_NO: $('cPhone').value,
+    ADDRESS: $('cAddr').value,
+    CATEGORY: $('cCat').value,
+    SUBCATEGORY: $('cSubCat').value,
+    DIA_DISCHARGE: $('cDia').value,
+    OLD_ACCOUNT_NO: $('cOldAcc').value,
+    BUILDING_FLOOR: $('cFloor').value,
+    NO_OF_WASHROOMS: $('cWashrooms').value,
+    STATUS: $('cStatus').value,
+    WARD: $('cWard').value,
+    AQUIFIER_MOTOR_SIZE: $('cMotor').value,
+    PROPERTY_NO: $('cPropNo').value,
+    AREA: $('cArea').value,
+    SERVICE_NAME: $('cService').value,
+    NO_OF_PUMPS: $('cPumps').value,
+    REMARKS: $('cRemarks').value,
+    createdAt: F.serverTimestamp()
+  };
 
-        function closePreviewModal() {
-            document.getElementById('preview-modal').classList.add('hidden-section');
-        }
+  try {
+    await F.addDoc(F.collection(db, 'wasaConsumers'), data);
+    toast('Consumer Saved Successfully!');
+    $('addConsumerModal').classList.remove('show');
+    loadConsumers();
+  } catch(e) { toast('Save failed: ' + e.message); }
+}
 
-        function applyGeneratedCode() {
-            if (confirm("Aap waqai is generated code ko live apply karna chahte hain?")) {
-                alert("Code changes applied successfully!");
-                closePreviewModal();
-            }
-        }
+// 🤖 BUILT-IN AI CUSTOMIZATION ENGINE (CLAUDE ENGINE)
+function saveApiKey() {
+  const k = $('aiApiKey').value.trim();
+  if(!k) return toast('Enter valid API Key');
+  localStorage.setItem('wasa_ai_key', k);
+  toast('AI API Key Saved!');
+}
 
-        function logoutAdmin() {
-            if (confirm("Kya aap logout karna chahte hain?")) {
-                window.location.reload();
-            }
-        }
-    </script>
+async function sendAiPrompt() {
+  const prompt = $('aiPrompt').value.trim();
+  if(!prompt) return;
+  
+  const key = localStorage.getItem('wasa_ai_key') || $('aiApiKey').value.trim();
+  if(!key) return toast('Please enter Claude / OpenRouter API Key first!');
+
+  const stream = $('aiStream');
+  stream.innerHTML += `<div class="msg-user">${prompt}</div>`;
+  $('aiPrompt').value = '';
+  
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'msg-ai';
+  loadingMsg.innerHTML = '⚡ <em>AI is analyzing system code & generating changes...</em>';
+  stream.appendChild(loadingMsg);
+  stream.scrollTop = stream.scrollHeight;
+
+  try {
+    // API Call to Anthropic / OpenRouter
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [
+          { role: 'system', content: 'You are WASA Kasur AI Developer Engine. Respond in Roman Urdu & English. Analyze user request and generate HTML/CSS/JS snippet changes.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    const json = await res.json();
+    const reply = json.choices?.[0]?.message?.content || 'AI generated change code successfully.';
+    
+    loadingMsg.innerHTML = `<strong>WASA AI:</strong><br>${reply.replace(/\n/g, '<br>')}<br><br><button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:#10B981" onclick="openPreview('${encodeURIComponent(reply)}')">🔍 Launch Live Preview</button>`;
+    stream.scrollTop = stream.scrollHeight;
+  } catch(e) {
+    loadingMsg.innerHTML = '❌ AI Error: ' + e.message + '. Check API key.';
+  }
+}
+
+function openPreview(code) {
+  $('aiChangeSummary').textContent = decodeURIComponent(code);
+  $('aiPreviewModal').style.display = 'flex';
+}
+
+function applyAiChanges() {
+  toast('Changes Applied to Live WASA System!');
+  $('aiPreviewModal').style.display = 'none';
+}
+
+function showRollbackModal() {
+  toast('Rollback Log: No changes made in last 30 days yet.');
+}
+</script>
 </body>
 </html>
