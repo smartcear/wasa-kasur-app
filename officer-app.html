@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Mobile PWA settings -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1A56DB" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  
+  <title>Officer App | WASA Kasur</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Firebase v9+ -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, orderBy, limit, serverTimestamp, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSf45vEBv_PqEnA4jEKUfGcZvLcru-3rU",
+      authDomain: "wasa-app-ksr.firebaseapp.com",
+      projectId: "wasa-app-ksr",
+      storageBucket: "wasa-app-ksr.firebasestorage.app",
+      messagingSenderId: "572534729136",
+      appId: "1:572534729136:web:c172481da5a37756c50e75",
+      measurementId: "G-363L5VJD0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Offline mode for PWA
+    enableIndexedDbPersistence(db).catch(() => {});
+
+    window.WASA = { app, auth, db, firebase: { signInWithEmailAndPassword, signOut, onAuthStateChanged, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, orderBy, limit, serverTimestamp } };
+    window.dispatchEvent(new Event('wasa-ready'));
+  </script>
+
+  <style>
+    :root {
+      --primary: #1A56DB;
+      --primary-dark: #1E429F;
+      --bg: #F3F4F6;
+      --card-bg: #FFFFFF;
+      --text-main: #111827;
+      --text-sub: #6B7280;
+      --danger: #E02424;
+      --success: #057A55;
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+      --font: 'Inter', sans-serif;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text-main); overflow: hidden; user-select: none; }
+    input, textarea, button, select { font-family: inherit; }
+
+    /* SPLASH SCREEN */
+    #splash {
+      position: fixed; inset: 0; background: var(--primary); z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: white; transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; transform: scale(1.05); }
+    .splash-logo {
+      width: 90px; height: 90px; background: white; color: var(--primary);
+      border-radius: 24px; display: flex; align-items: center; justify-content: center;
+      font-size: 40px; font-weight: 800; margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    /* LOGIN SCREEN */
+    #loginScreen {
+      position: fixed; inset: 0; background: white; z-index: 5000;
+      display: flex; flex-direction: column; padding: 40px 24px;
+    }
+    #loginScreen h1 { font-size: 26px; font-weight: 800; margin-top: 20px; }
+    #loginScreen p { color: var(--text-sub); margin-bottom: 30px; font-size: 14px; }
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .input-group input { 
+      width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px;
+      font-size: 15px; outline: none; transition: border 0.2s;
+    }
+    .input-group input:focus { border-color: var(--primary); }
+    .btn-main {
+      width: 100%; padding: 16px; background: var(--primary); color: white;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+      box-shadow: 0 4px 12px rgba(26,86,219,0.3); transition: transform 0.1s;
+    }
+    .btn-main:active { transform: scale(0.97); }
+    
+    /* TOAST */
+    #toastWrap { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: #111827; color: white; padding: 14px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: toastIn 0.3s ease; }
+    @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* APP LAYOUT */
+    #appWrap { display: none; height: 100vh; flex-direction: column; }
+    .header { background: var(--primary); color: white; padding: 16px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(26,86,219,0.3); z-index: 10; flex-shrink: 0; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .greeting { font-size: 14px; opacity: 0.9; }
+    .user-name { font-size: 18px; font-weight: 700; }
+    .sync-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .sync-badge.offline { background: var(--danger); }
+    .sync-dot { width: 6px; height: 6px; background: #34D399; border-radius: 50%; }
+    .sync-badge.offline .sync-dot { background: white; }
+
+    /* CONTENT AREA */
+    .content-area { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(80px + var(--safe-bottom)); }
+    .screen { display: none; animation: fadeIn 0.2s; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* CARDS */
+    .stats-card { background: white; padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 16px; }
+    .stat-col { flex: 1; }
+    .stat-col.right { text-align: right; border-left: 1px solid #E5E7EB; }
+    .stat-label { font-size: 12px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--text-main); }
+    .stat-val.green { color: var(--success); }
+
+    /* CONSUMER & ACTIVITY CARDS (Strict prompt rules) */
+    .data-card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); position: relative; }
+    .card-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; background: #DBEAFE; color: var(--primary); }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text-main); } /* Name always BOLD */
+    .card-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+    .card-amount { font-size: 14px; font-weight: 800; color: var(--success); margin-top: 6px; }
+    .card-time { font-size: 11px; color: #9CA3AF; margin-top: 8px; display: block; }
+    .card-arrow { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #D1D5DB; font-size: 20px; }
+    
+    /* SEARCH UI */
+    .search-box { position: relative; margin-bottom: 16px; }
+    .search-box input { width: 100%; background: white; border: none; padding: 14px 14px 14px 40px; border-radius: 12px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); outline: none; }
+    .search-icon { position: absolute; left: 14px; top: 14px; font-size: 16px; color: var(--text-sub); }
+    .filter-pill { display: inline-flex; align-items: center; gap: 4px; background: white; padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid #E5E7EB; margin-right: 8px; margin-bottom: 12px; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; height: calc(65px + var(--safe-bottom)); padding-bottom: var(--safe-bottom); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 100; border-top: 1px solid #F3F4F6; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-sub); font-size: 10px; font-weight: 600; gap: 4px; border: none; background: transparent; height: 100%; transition: color 0.2s; }
+    .nav-btn.active { color: var(--primary); }
+    .nav-icon { font-size: 22px; }
+    
+    /* FAB (Center Button) */
+    .fab-wrap { position: relative; top: -16px; }
+    .fab { width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 20px rgba(26,86,219,0.4); border: 4px solid var(--bg); transition: transform 0.2s; }
+    .fab:active { transform: scale(0.9); }
+
+    /* BOTTOM SHEET (Form Selector) */
+    #bottomSheet { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: flex-end; }
+    #bottomSheet.show { display: flex; }
+    .sheet-content { background: white; width: 100%; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px 20px calc(24px + var(--safe-bottom)); transform: translateY(100%); animation: slideUp 0.3s forwards; }
+    @keyframes slideUp { to { transform: translateY(0); } }
+    .sheet-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+    .sheet-btn { width: 100%; padding: 16px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; transition: background 0.1s; }
+    .sheet-btn:active { background: #F3F4F6; }
+    .sheet-icon { font-size: 20px; }
+    
+    /* Voice Note UI Placeholder */
+    .voice-btn { background: #FEE2E2; color: var(--danger); padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; border: none; width: 100%; justify-content: center; }
+
+    /* No Download Notice */
+    .no-export-note { text-align: center; font-size: 12px; color: var(--text-sub); margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toastWrap"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">W</div>
+  <h2>WASA Kasur</h2>
+  <p style="opacity: 0.8; font-size: 13px; margin-top: 8px">Field Officer App</p>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display: none;">
+  <div class="splash-logo" style="margin: 0 auto 20px; width: 72px; height: 72px; font-size: 32px; box-shadow:none; border:2px solid var(--primary)">W</div>
+  <h1 style="text-align: center;">Welcome Back</h1>
+  <p style="text-align: center;">Login to access field assignments</p>
+
+  <div class="input-group">
+    <label>Phone Number</label>
+    <input type="tel" id="loginPhone" placeholder="03001234567" maxlength="11" />
+  </div>
+  <div class="input-group">
+    <label>Password</label>
+    <input type="password" id="loginPass" placeholder="••••••••" />
+  </div>
+  <button class="btn-main" onclick="doLogin()">Sign In</button>
+  
+  <p style="text-align: center; margin-top: 24px; font-size: 13px;">
+    New Officer? <a href="#" style="color:var(--primary); font-weight:700" onclick="toast('Register Request sent to Admin')">Request Account</a>
+  </p>
+</div>
+
+<!-- MAIN APP -->
+<div id="appWrap">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="greeting">Assalam-o-Alaikum,</div>
+        <div class="user-name" id="uiName">Officer</div>
+      </div>
+      <div class="sync-badge" id="syncStatus">
+        <div class="sync-dot"></div> Online
+      </div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    
+    <!-- HOME SCREEN -->
+    <div class="screen active" id="scr-home">
+      <div class="stats-card">
+        <div class="stat-col">
+          <div class="stat-label">My Activities (Today)</div>
+          <div class="stat-val" id="stActs">0</div>
+        </div>
+        <div class="stat-col right">
+          <div class="stat-label">My Recovery</div>
+          <div class="stat-val green" id="stRec">Rs 0</div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Quick Actions</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+        <button class="sheet-btn" style="margin:0; padding:12px; justify-content:center; flex-direction:column; text-align:center" onclick="openForm('survey')">
+          <span class="sheet-icon">🏠</span> Property Survey
+        </button>
+        <button class="sheet-btn" style="margin:0; padding:12px; justify-content:center; flex-direction:column; text-align:center" onclick="openForm('bill')">
+          <span class="sheet-icon">💰</span> Bill Recovery
+        </button>
+      </div>
+
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Recent (Offline Queue)</h3>
+      <div class="data-card" style="text-align:center; color:var(--text-sub); padding:30px 16px;">
+        All synced. No pending activities.
+      </div>
+    </div>
+
+    <!-- SEARCH SCREEN -->
+    <div class="screen" id="scr-search">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="search" placeholder="Search Consumer Name, Account..." />
+      </div>
+      <div>
+        <div class="filter-pill">STATUS: ACTIVE ✕</div>
+        <div class="filter-pill" style="color:var(--primary)">+ Add Filter</div>
+      </div>
+      <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 16px;">Showing results from global database (respecting zone access)</p>
+      
+      <!-- Card Layout strictly per prompt: BOLD NAME on top -->
+      <div class="data-card">
+        <div class="card-badge">Residential</div>
+        <div class="card-title">Muhammad Ahmad Raza</div>
+        <div class="card-sub">📞 0300-1234567 • ID #94321</div>
+        <div class="card-sub">📍 H-14, Block A, Model Town, Kasur</div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="data-card">
+        <div class="card-badge" style="background:#FEF3C7; color:#B45309">Commercial</div>
+        <div class="card-title">Al-Fatah Hospital</div>
+        <div class="card-sub">📞 0321-7654321 • ID #11204</div>
+        <div class="card-sub">📍 Main Ferozepur Road</div>
+        <div class="card-arrow">→</div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY SCREEN (Officer's Own Only) -->
+    <div class="screen" id="scr-activity">
+      <h2 style="font-size:20px; font-weight:800; margin-bottom:16px">My Field Audit</h2>
+      
+      <!-- Card format strictly per prompt: Badge -> Bold Name -> No -> Amount -> Time -->
+      <div class="data-card">
+        <div class="card-badge" style="background:#D1FAE5; color:#065F46">Bill Recovery</div>
+        <div class="card-title">Kamran Ali</div>
+        <div class="card-sub">Cons: 49302 • Prop: B-99</div>
+        <div class="card-amount">Rs. 4,500</div>
+        <div class="card-time">Today, 10:42 AM</div>
+        <div class="card-arrow">→</div>
+      </div>
+
+      <div class="data-card">
+        <div class="card-badge">Property Survey</div>
+        <div class="card-title">Usman Tariq</div>
+        <div class="card-sub">Cons: 11029 • Prop: C-12</div>
+        <!-- Amount hidden if none -->
+        <div class="card-time">Yesterday, 02:15 PM</div>
+        <div class="card-arrow">→</div>
+      </div>
+    </div>
+
+    <!-- REPORTS SCREEN -->
+    <div class="screen" id="scr-reports">
+      <h2 style="font-size:20px; font-weight:800; margin-bottom:16px">My Progress</h2>
+      <select style="width:100%; padding:12px; border-radius:8px; border:1px solid #E5E7EB; margin-bottom:16px">
+        <option>This Month</option>
+        <option>Last 30 Days</option>
+        <option>Today</option>
+      </select>
+
+      <div class="stats-card">
+        <div class="stat-col"><div class="stat-label">Total Visits</div><div class="stat-val">142</div></div>
+        <div class="stat-col right"><div class="stat-label">Total Recovery</div><div class="stat-val green">Rs 45,200</div></div>
+      </div>
+      
+      <div style="background:white; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">By Activity Type</h3>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px"><span>Property Survey</span><strong>94</strong></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px"><span>Bill Recovery</span><strong>48</strong></div>
+      </div>
+
+      <!-- Strict Rule applied: NO DOWNLOAD BUTTON -->
+      <div class="no-export-note">
+        Exporting data is restricted on mobile devices. For detailed exports, please contact your Administrator.
+      </div>
+    </div>
+    
+  </div> <!-- end content -->
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home', this)"><span class="nav-icon">🏠</span>Home</button>
+    <button class="nav-btn" onclick="switchTab('search', this)"><span class="nav-icon">🔍</span>Search</button>
+    <div class="fab-wrap">
+      <button class="fab" onclick="$('bottomSheet').classList.add('show')">+</button>
+    </div>
+    <button class="nav-btn" onclick="switchTab('activity', this)"><span class="nav-icon">📋</span>Activity</button>
+    <button class="nav-btn" onclick="switchTab('reports', this)"><span class="nav-icon">📈</span>Reports</button>
+  </div>
+</div>
+
+<!-- BOTTOM SHEET (FAB OPTIONS) -->
+<div id="bottomSheet" onclick="if(event.target===this) this.classList.remove('show')">
+  <div class="sheet-content">
+    <div class="sheet-title">Select Activity</div>
+    <button class="sheet-btn" onclick="openForm('survey')"><span class="sheet-icon">📝</span> Property Survey (15 fields)</button>
+    <button class="sheet-btn" onclick="openForm('bill')"><span class="sheet-icon">💰</span> Bill Recovery (4 fields)</button>
+    <button class="sheet-btn" onclick="openForm('correction')"><span class="sheet-icon">✏️</span> Submit Data Correction</button>
+    
+    <div style="margin-top: 16px; border-top: 1px solid #E5E7EB; padding-top: 16px;">
+      <button class="voice-btn" onclick="toast('Recording...', 'AI will transcribe details', 'info')">
+        🎤 Quick Voice Note Activity
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- UTILS ---
+function $(id) { return document.getElementById(id); }
+function toast(t,m='',type='info') {
+  const w = $('toastWrap');
+  const e = document.createElement('div');
+  e.className = 'toast'; e.innerHTML = `<div><strong>${t}</strong>${m?'<br><span style="opacity:0.8;font-size:11px">'+m+'</span>':''}</div>`;
+  w.appendChild(e);
+  setTimeout(()=> { e.style.opacity=0; setTimeout(()=>e.remove(),300); }, 3000);
+}
+function phoneToEmail(phone) { return String(phone).replace(/\D/g, '') + '@wasa.kasur.app'; }
+
+// --- NAV ---
+function switchTab(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('scr-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+function openForm(type) {
+  $('bottomSheet').classList.remove('show');
+  toast('Opening Form Builder', `Loading dynamic fields for ${type}`);
+  // Real form logic will map dynamic fields in Phase 5
+}
+
+// --- AUTH LOGIC ---
+let currentUser = null;
+
+async function doLogin() {
+  const phone = $('loginPhone').value.replace(/\D/g, '');
+  const pass = $('loginPass').value;
+  if(phone.length !== 11 || !pass) return toast('Error', '11-digit phone and password required');
+  
+  toast('Signing in...');
+  try {
+    const w = window.WASA;
+    await w.firebase.signInWithEmailAndPassword(w.auth, phoneToEmail(phone), pass);
+  } catch(e) {
+    toast('Login Failed', e.message);
+  }
+}
+
+// Listen for Firebase ready
+window.addEventListener('wasa-ready', () => {
+  const { auth, db, firebase: F } = window.WASA;
+  
+  F.onAuthStateChanged(auth, async (user) => {
+    if(user) {
+      const phone = user.email.split('@')[0];
+      try {
+        const doc = await F.getDoc(F.doc(db, 'wasaUsers', phone));
+        if(doc.exists()) {
+          currentUser = doc.data();
+          $('uiName').textContent = currentUser.name || 'Officer';
+          
+          if(currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+            toast('Admin Login', 'Welcome. Testing officer app.');
+          }
+          
+          $('loginScreen').style.display = 'none';
+          $('appWrap').style.display = 'flex';
+        } else {
+          toast('Error', 'No profile found. Please contact Admin.');
+          F.signOut(auth);
+        }
+      } catch(e) { toast('Error', e.message); }
+    } else {
+      $('loginScreen').style.display = 'flex';
+      $('appWrap').style.display = 'none';
+    }
+  });
+
+  // Splash Screen Hide
+  setTimeout(() => {
+    $('splash').classList.add('hide');
+    setTimeout(() => $('splash').style.display = 'none', 500);
+  }, 2000);
+});
+
+// Offline Detection Simulator
+window.addEventListener('online',  () => { 
+  const b = $('syncStatus'); b.className='sync-badge'; b.innerHTML='<div class="sync-dot"></div> Online'; 
+  toast('Online', 'Syncing background queue...');
+});
+window.addEventListener('offline', () => { 
+  const b = $('syncStatus'); b.className='sync-badge offline'; b.innerHTML='<div class="sync-dot"></div> Offline';
+  toast('Offline Mode', 'Data will save locally');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>WASA Kasur - Officer App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind Config -->
+  <script>
+    tailwind = window.tailwind || {};
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: '#0b1329',
+            navy2: '#0f172a',
+            lightbg: '#f8fafc',
+            slate900: '#0f172a',
+            brand: '#0ea5e9',
+            ok: '#10b981',
+            warn: '#f59e0b',
+            err: '#ef4444'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#f8fafc; }
+    .scroll-thin::-webkit-scrollbar{ width:8px; height:8px; }
+    .scroll-thin::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:8px; }
+    .modal { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; background:rgba(2,6,23,.55); backdrop-filter: blur(2px); }
+    .modal.show { display:flex; }
+    .btn { transition: transform .08s ease; }
+    .btn:active { transform: translateY(1px) scale(0.99); }
+    .badge { font-size:10px; padding:2px 6px; border-radius:9999px; background:#e5e7eb; color:#111827; }
+    .shadow-header{ box-shadow: 0 1px 0 rgba(0,0,0,.06); }
+    .no-print{ display: block; } /* just to be explicit: no print/export anywhere */
+  </style>
+</head>
+<body class="text-slate-800">
+  <!-- Login Overlay -->
+  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-semibold">WASA Officer Login</h2>
+        <span class="badge">Firebase Auth</span>
+      </div>
+      <p class="text-sm text-slate-600 mb-4">Email + Password se login karein. Offline access ke liye app pehle ek dafa online open karke login zaroor karein.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm font-medium">Email</label>
+          <input id="loginEmail" type="email" class="mt-1 w-full border rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-brand" placeholder="officer@wasa.ksr">
+        </div>
+        <div>
+          <label class="text-sm font-medium">Password</label>
+          <input id="loginPassword" type="password" class="mt-1 w-full border rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-brand" placeholder="••••••••">
+        </div>
+        <div class="flex items-center justify-between">
+          <button id="btnLogin" class="btn bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg">Login</button>
+          <button id="btnSignup" class="text-sky-700 hover:underline text-sm">Create Account</button>
+        </div>
+        <div id="loginMsg" class="mt-2 text-sm text-red-600"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-white shadow-header px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M2 19h20v2H2zM6 4h12l2 9H4z"/></svg>
+      </div>
+      <div>
+        <div class="font-semibold">WASA Officer App</div>
+        <div class="text-xs text-slate-500">Kasur Field Operations</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div id="connBadge" class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Online</div>
+      <button id="btnSync" class="btn px-3 py-1.5 border rounded-lg">Sync Consumers</button>
+      <button id="btnLogout" class="btn bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg">Logout</button>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <section class="px-4 py-3 bg-slate-50 border-b">
+    <div class="flex items-center gap-2">
+      <input id="globalSearch" type="text" placeholder="Global search (Name / Consumer No / CNIC / Phone) ..." class="flex-1 border rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-brand">
+      <span id="cacheInfo" class="text-xs text-slate-500 hidden"></span>
+    </div>
+    <div id="offlineQueueBar" class="mt-2 hidden">
+      <div class="text-xs text-slate-600">
+        Offline queue: <span id="pendingCount">0</span> pending activity(ies) • Online hote hi auto-sync ho jayega.
+      </div>
+    </div>
+  </section>
+
+  <!-- Consumers List -->
+  <main class="p-3">
+    <div id="consumersList" class="grid grid-cols-1 gap-3"></div>
+    <div id="emptyState" class="text-center text-slate-500 mt-8 hidden">Search ya Sync Consumers dabayein.</div>
+  </main>
+
+  <!-- Activity Modal -->
+  <div id="activityModal" class="modal">
+    <div class="bg-white w-[96vw] max-w-2xl rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h3 id="activityModalTitle" class="font-semibold">New Activity</h3>
+        <div class="flex items-center gap-2">
+          <button id="btnCloseActivity" class="btn px-3 py-1.5 border rounded-lg">Close</button>
+          <button id="btnSubmitActivity" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg">Submit</button>
+        </div>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Title</label>
+            <input id="actTitle" class="mt-1 w-full border rounded-lg p-2" placeholder="e.g., Inspection at site">
+          </div>
+          <div>
+            <label class="text-sm font-medium">Status</label>
+            <select id="actStatus" class="mt-1 w-full border rounded-lg p-2">
+              <option>Pending</option>
+              <option>In-Progress</option>
+              <option>Completed</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Related CONSUMER_NO (optional)</label>
+          <input id="actConsumerNo" class="mt-1 w-full border rounded-lg p-2" placeholder="e.g. 00123456">
+        </div>
+        <div>
+          <label class="text-sm font-medium">Notes / Details</label>
+          <textarea id="actNotes" rows="4" class="mt-1 w-full border rounded-lg p-2" placeholder="Field observation, actions taken..."></textarea>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Attachments (Images/Videos)</label>
+          <input id="actFiles" type="file" accept="image/*,video/*" multiple class="mt-1 block">
+          <div id="actFilesHint" class="text-xs text-slate-500 mt-1">Attachments Cloudinary pe upload hongi (unsigned) — Offline hua to queue me save ho jayengi.</div>
+        </div>
+        <div id="activityMsg" class="text-sm text-red-600"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg hidden"></div>
+
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    // Firebase SDKs (CDN)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, query, where, orderBy, limit, addDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-analytics.js";
+
+    // EXACT Firebase Config (as you provided)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSf45vEBv_PqEnA4jEKUfGcZvLcru-3rU",
+      authDomain: "wasa-app-ksr.firebaseapp.com",
+      projectId: "wasa-app-ksr",
+      storageBucket: "wasa-app-ksr.firebasestorage.app",
+      messagingSenderId: "572534729136",
+      appId: "1:572534729136:web:c172481da5a37756c50e75",
+      measurementId: "G-363L5VJD0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    let analytics = null;
+    try { analytics = getAnalytics(app); } catch (e) { /* analytics optional for local files */ }
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Cloudinary Config (EXACT)
+    const CLOUD_NAME = "rlkzsmm2";
+    const UPLOAD_PRESET = "wasa-app-ksr";
+    const CLOUD_ENDPOINT = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
+
+    // Consumers schema (27 fields as per spec)
+    const CONSUMER_FIELDS = [
+      "CONSUMER_NO","CONSUMER_NAME","FATHER_NAME","CNIC","CONTACT_NO","ADDRESS","CATEGORY","SUBCATEGORY","COMM_CATEGORY","DIA_DISCHARGE","OLD_ACCOUNT_NO","BUILDING_FLOOR","MILESTONE","WALK_SORT","EMAIL","DEACTIVATION_DATE","NO_OF_WASHROOMS","STATUS","WARD","AQUIFIER_MOTOR_SIZE","PROPERTY_NO","AREA","RE_ACTIVE_DATE","ACTIVE_CON_DATE","SERVICE_NAME","NO_OF_PUMPS","REMARKS"
+    ];
+
+    // DOM
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnSignup = document.getElementById('btnSignup');
+    const loginMsg = document.getElementById('loginMsg');
+
+    const btnLogout = document.getElementById('btnLogout');
+    const btnSync = document.getElementById('btnSync');
+    const connBadge = document.getElementById('connBadge');
+    const globalSearch = document.getElementById('globalSearch');
+    const cacheInfo = document.getElementById('cacheInfo');
+    const consumersList = document.getElementById('consumersList');
+    const emptyState = document.getElementById('emptyState');
+    const offlineQueueBar = document.getElementById('offlineQueueBar');
+    const pendingCount = document.getElementById('pendingCount');
+
+    const activityModal = document.getElementById('activityModal');
+    const activityModalTitle = document.getElementById('activityModalTitle');
+    const btnCloseActivity = document.getElementById('btnCloseActivity');
+    const btnSubmitActivity = document.getElementById('btnSubmitActivity');
+    const actTitle = document.getElementById('actTitle');
+    const actStatus = document.getElementById('actStatus');
+    const actConsumerNo = document.getElementById('actConsumerNo');
+    const actNotes = document.getElementById('actNotes');
+    const actFiles = document.getElementById('actFiles');
+    const activityMsg = document.getElementById('activityMsg');
+
+    // Toast
+    const toast = (msg, type='info') => {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      t.style.background = type==='error' ? '#ef4444' : (type==='success' ? '#059669' : '#0f172a');
+      setTimeout(()=>t.classList.add('hidden'), 2500);
+    };
+
+    // Connectivity
+    const updateConn = () => {
+      if (navigator.onLine) {
+        connBadge.textContent = 'Online';
+        connBadge.className = 'text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700';
+      } else {
+        connBadge.textContent = 'Offline';
+        connBadge.className = 'text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700';
+      }
+    };
+    window.addEventListener('online', async () => { updateConn(); await syncPendingActivities(); });
+    window.addEventListener('offline', updateConn);
+    updateConn();
+
+    // IndexedDB helpers
+    let idb = null;
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('wasa_officer_db', 2);
+        req.onupgradeneeded = e => {
+          const dbx = e.target.result;
+          if (!dbx.objectStoreNames.contains('consumers')) dbx.createObjectStore('consumers', { keyPath: 'CONSUMER_NO' });
+          if (!dbx.objectStoreNames.contains('pending_activities')) dbx.createObjectStore('pending_activities', { keyPath: 'id', autoIncrement: true });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbPutAll(store, rows) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(store, 'readwrite');
+        const st = tx.objectStore(store);
+        rows.forEach(r => st.put(r));
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function idbGetAll(store) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(store, 'readonly');
+        const st = tx.objectStore(store);
+        const req = st.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbAdd(store, obj) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(store, 'readwrite');
+        const st = tx.objectStore(store);
+        const req = st.add(obj);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbDelete(store, key) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(store, 'readwrite');
+        const st = tx.objectStore(store);
+        const req = st.delete(key);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    // Service Worker (single-file dynamic registration)
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE = 'wasa-officer-v1';
+        self.addEventListener('install', e => {
+          self.skipWaiting();
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).catch(()=>{}));
+        });
+        self.addEventListener('activate', e => self.clients.claim());
+        self.addEventListener('fetch', e => {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.match(e.request).then(res => {
+              const fetchP = fetch(e.request).then(net => {
+                caches.open(CACHE).then(c => c.put(e.request, net.clone()));
+                return net;
+              }).catch(()=>res);
+              return res || fetchP;
+            })
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'text/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(()=>{});
+    }
+
+    // Auth UI
+    btnLogin.addEventListener('click', async () => {
+      loginMsg.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, (loginEmail.value||'').trim(), (loginPassword.value||'').trim());
+      } catch (e) {
+        loginMsg.textContent = e.message || e.code;
+      }
+    });
+    btnSignup.addEventListener('click', async () => {
+      loginMsg.textContent = '';
+      try {
+        await createUserWithEmailAndPassword(auth, (loginEmail.value||'').trim(), (loginPassword.value||'').trim());
+        loginMsg.textContent = 'Account created. Please login now.';
+        loginMsg.classList.remove('text-red-600'); loginMsg.classList.add('text-emerald-600');
+      } catch (e) {
+        loginMsg.textContent = e.message || e.code;
+        loginMsg.classList.add('text-red-600'); loginMsg.classList.remove('text-emerald-600');
+      }
+    });
+    btnLogout.addEventListener('click', async () => { try { await signOut(auth); } catch(e){} });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        loginOverlay.style.display = 'none';
+        toast('Login successful', 'success');
+        await bootAfterLogin();
+      } else {
+        loginOverlay.style.display = 'flex';
+      }
+    });
+
+    // Boot after login
+    async function bootAfterLogin() {
+      idb = await openIDB();
+      await refreshPendingBar();
+      // Try first-time minimal sync if cache empty
+      const cached = await idbGetAll('consumers');
+      if (!cached.length && navigator.onLine) {
+        await syncConsumers(150);
+      } else {
+        renderConsumers(cached);
+      }
+    }
+
+    // Sync Consumers (from Firestore -> IndexedDB)
+    btnSync.addEventListener('click', async () => {
+      if (!navigator.onLine) { toast('Offline ho — sync abhi possible nahi.', 'error'); return; }
+      await syncConsumers(300);
+    });
+
+    async function syncConsumers(batch=200) {
+      consumersList.innerHTML = '<div class="text-center text-slate-500 py-6">Syncing consumers...</div>';
+      try {
+        const coll = collection(db, 'consumers');
+        // Basic ordered page; for demo: first N
+        const q = query(coll, orderBy('CONSUMER_NO'), limit(batch));
+        const snap = await getDocs(q);
+        const rows = [];
+        snap.forEach(d => rows.push({ ...defaultConsumerShape(), ...d.data() }));
+        await idbPutAll('consumers', rows);
+        renderConsumers(rows);
+        cacheInfo.classList.remove('hidden');
+        cacheInfo.textContent = `Cached: ${rows.length} consumers`;
+        toast('Consumers synced to device', 'success');
+      } catch (e) {
+        toast('Sync failed: '+(e.message||e.code), 'error');
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    function defaultConsumerShape() {
+      const obj = {};
+      CONSUMER_FIELDS.forEach(f => obj[f] = obj[f] || '');
+      return obj;
+    }
+
+    // Render Consumers as mobile cards
+    function renderConsumers(items) {
+      consumersList.innerHTML = '';
+      if (!items || items.length === 0) {
+        emptyState.classList.remove('hidden'); return;
+      }
+      emptyState.classList.add('hidden');
+      items.forEach(rec => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border p-3';
+        const name = rec.CONSUMER_NAME || '(Unnamed)';
+        const status = rec.STATUS || '';
+        const badge = status ? `<span class="badge ml-2">${status}</span>` : '';
+        card.innerHTML = `
+          <div class="font-semibold text-slate-900">${name}</div>
+          <div class="text-xs text-slate-600 mt-0.5">
+            CONSUMER_NO: <span class="font-medium">${rec.CONSUMER_NO||'-'}</span> • ${rec.CNIC||''}
+          </div>
+          <div class="text-sm text-slate-700 mt-1">${rec.ADDRESS||''}</div>
+          <div class="text-xs text-slate-600 mt-1">${rec.CONTACT_NO||''} ${badge}</div>
+          <div class="mt-3 flex items-center gap-2">
+            <button class="btn px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg" data-action="new-activity" data-consumer="${rec.CONSUMER_NO||''}">New Activity</button>
+          </div>
+        `;
+        consumersList.appendChild(card);
+      });
+      // Bind New Activity buttons
+      consumersList.querySelectorAll('button[data-action="new-activity"]').forEach(b => {
+        b.addEventListener('click', () => openActivityModal(b.getAttribute('data-consumer') || ''));
+      });
+    }
+
+    // Global Search (offline-first, then network fallback for small slice)
+    globalSearch.addEventListener('input', async () => {
+      const term = globalSearch.value.trim().toLowerCase();
+      const cacheRows = await idbGetAll('consumers');
+      const local = cacheRows.filter(r => {
+        const blob = `${r.CONSUMER_NO||''} ${r.CONSUMER_NAME||''} ${r.CNIC||''} ${r.CONTACT_NO||''}`.toLowerCase();
+        return blob.includes(term);
+      });
+      if (term && local.length) {
+        renderConsumers(local.slice(0, 100));
+        return;
+      }
+      // If online and no local hit, light network fallback
+      if (navigator.onLine && term.length >= 3) {
+        const coll = collection(db, 'consumers');
+        // Simple slice pull; Firestore doesn't support full-text; so pull first N and filter client-side
+        const q = query(coll, orderBy('CONSUMER_NO'), limit(150));
+        const snap = await getDocs(q);
+        const arr = []; snap.forEach(d => arr.push({ ...defaultConsumerShape(), ...d.data() }));
+        const filtered = arr.filter(r => {
+          const blob = `${r.CONSUMER_NO||''} ${r.CONSUMER_NAME||''} ${r.CNIC||''} ${r.CONTACT_NO||''}`.toLowerCase();
+          return blob.includes(term);
+        });
+        renderConsumers(filtered);
+      } else {
+        if (!term) renderConsumers(cacheRows);
+      }
+    });
+
+    // Activity Modal
+    function openActivityModal(consumerNo='') {
+      activityMsg.textContent = '';
+      actTitle.value = '';
+      actStatus.value = 'Pending';
+      actConsumerNo.value = consumerNo;
+      actNotes.value = '';
+      actFiles.value = '';
+      activityModalTitle.textContent = consumerNo ? `New Activity • ${consumerNo}` : 'New Activity';
+      activityModal.classList.add('show');
+    }
+    btnCloseActivity.addEventListener('click', () => activityModal.classList.remove('show'));
+
+    btnSubmitActivity.addEventListener('click', async () => {
+      activityMsg.textContent = '';
+      const title = actTitle.value.trim();
+      const status = actStatus.value;
+      const consumerNo = (actConsumerNo.value||'').trim();
+      const notes = actNotes.value.trim();
+      const files = Array.from(actFiles.files || []);
+
+      if (!title) { activityMsg.textContent = 'Title required'; return; }
+
+      const baseData = {
+        title, status, consumerNo, notes,
+        deviceTs: new Date().toISOString(),
+        uploadedBy: auth.currentUser ? (auth.currentUser.email||auth.currentUser.uid) : 'unknown'
+      };
+
+      if (navigator.onLine) {
+        try {
+          const urls = await uploadFilesToCloudinary(files);
+          const payload = { ...baseData, attachments: urls, offline: false };
+          await addDoc(collection(db, 'activities'), payload);
+          toast('Activity submitted', 'success');
+          activityModal.classList.remove('show');
+        } catch (e) {
+          activityMsg.textContent = 'Submit failed (online): '+(e.message||e.code);
+        }
+      } else {
+        try {
+          const filesData = await filesToDataURLs(files);
+          const queued = { ...baseData, filesData, offline: true };
+          await idbAdd('pending_activities', queued);
+          await refreshPendingBar();
+          activityModal.classList.remove('show');
+          toast('Offline: Activity queued', 'success');
+        } catch (e) {
+          activityMsg.textContent = 'Queue failed: '+(e.message||e.code);
+        }
+      }
+    });
+
+    async function refreshPendingBar() {
+      if (!idb) idb = await openIDB();
+      const all = await idbGetAll('pending_activities');
+      const n = all.length;
+      pendingCount.textContent = n;
+      offlineQueueBar.classList.toggle('hidden', n===0);
+    }
+
+    // Sync queued activities when online
+    async function syncPendingActivities() {
+      if (!navigator.onLine) return;
+      await refreshPendingBar();
+      const queued = await idbGetAll('pending_activities');
+      for (const item of queued) {
+        try {
+          const urls = await dataURLsToCloudinary(item.filesData || []);
+          const payload = {
+            title: item.title,
+            status: item.status,
+            consumerNo: item.consumerNo,
+            notes: item.notes,
+            deviceTs: item.deviceTs,
+            uploadedBy: item.uploadedBy,
+            attachments: urls,
+            offline: false,
+            syncedAt: new Date().toISOString()
+          };
+          await addDoc(collection(db, 'activities'), payload);
+          await idbDelete('pending_activities', item.id);
+          await refreshPendingBar();
+          toast('Queued activity synced', 'success');
+        } catch (e) {
+          // Keep in queue; break to retry later
+          console.warn('Sync error', e);
+          break;
+        }
+      }
+    }
+
+    // Cloudinary helpers
+    async function uploadFilesToCloudinary(files=[]) {
+      const urls = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', UPLOAD_PRESET);
+        // optional: fd.append('folder', 'wasa_ksr/activities');
+        const res = await fetch(CLOUD_ENDPOINT, { method:'POST', body: fd });
+        if (!res.ok) throw new Error('Cloudinary upload failed: ' + res.status);
+        const json = await res.json();
+        urls.push(json.secure_url);
+      }
+      return urls;
+    }
+    function filesToDataURLs(files=[]) {
+      return Promise.all(files.map(f => new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve({ name: f.name, type: f.type, dataURL: r.result });
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(f);
+      })));
+    }
+    async function dataURLsToCloudinary(items=[]) {
+      const urls = [];
+      for (const it of items) {
+        const blob = dataURLtoBlob(it.dataURL);
+        const file = new File([blob], it.name || 'file', { type: it.type || 'application/octet-stream' });
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', UPLOAD_PRESET);
+        const res = await fetch(CLOUD_ENDPOINT, { method:'POST', body: fd });
+        if (!res.ok) throw new Error('Cloudinary upload failed: ' + res.status);
+        const json = await res.json();
+        urls.push(json.secure_url);
+      }
+      return urls;
+    }
+    function dataURLtoBlob(dataurl) {
+      const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]); let n = bstr.length; const u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      return new Blob([u8arr], {type:mime});
+    }
+
+    // Small UX helpers
+    function showEmptyIfNeeded() {
+      if (!consumersList.children.length) emptyState.classList.remove('hidden');
+      else emptyState.classList.add('hidden');
+    }
+
+    // Kickstart if already logged in (on hard refresh)
+    (async function boot() {
+      try { idb = await openIDB(); } catch(e) {}
+      updateConn();
+      await refreshPendingBar();
+      showEmptyIfNeeded();
+    })();
+  </script>
+
+  <footer class="py-4 text-center text-[11px] text-slate-400">
+    WASA Kasur • Officer App • v1.0.0
+  </footer>
+</body>
+</html>
