@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0F172A">
+  <title>WASA — Enterprise Admin Console</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>"></script>
+
+  <style>
+    :root{--p50:#EFF6FF;--p100:#DBEAFE;--p200:#BFDBFE;--p500:#1A56DB;--p600:#1E40AF;--p700:#1E3A8A;--s50:#F0FDF4;--s500:#16A34A;--s600:#15803D;--w50:#FFFBEB;--w500:#F59E0B;--w600:#D97706;--d50:#FEF2F2;--d500:#EF4444;--d600:#DC2626;--i50:#F0F9FF;--i500:#3B82F6;--g25:#FCFCFD;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--g900:#111827;--sb:#0B1120;--sb-hover:#1E293B;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-full:9999px;--sh-sm:0 1px 3px rgba(15,23,42,0.08);--sh-md:0 4px 6px -1px rgba(15,23,42,0.1);--sh-lg:0 10px 15px -3px rgba(15,23,42,0.1);--sh-xl:0 25px 50px -12px rgba(0,0,0,0.25);--font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:var(--font);}
+    body{background:#F1F5F9;color:var(--g900);min-height:100vh;font-size:14px;}
+    #login-view{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#020617,#0F172A 40%,#1E3A8A);padding:20px;position:relative;}
+    #login-view::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 30%,rgba(59,130,246,0.15),transparent 40%),radial-gradient(circle at 80% 70%,rgba(26,86,219,0.12),transparent 45%);}
+    .login-card{background:white;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);position:relative;z-index:2;}
+    .login-logo{text-align:center;margin-bottom:24px;}
+    .login-logo .drop{width:72px;height:72px;margin:0 auto 12px;background:linear-gradient(135deg,#1A56DB,#1E40AF);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px;color:white;box-shadow:0 10px 20px rgba(26,86,219,0.35);}
+    .login-logo h1{font-size:1.5rem;font-weight:800;color:var(--g900);letter-spacing:-0.02em;}
+    .login-logo p{color:var(--g500);font-size:0.8125rem;margin-top:4px;}
+    .form-row{margin-bottom:14px;}
+    .form-row label{display:block;font-size:0.75rem;font-weight:700;color:var(--g700);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.03em;}
+    .input{width:100%;padding:11px 14px;font-size:0.875rem;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g25);outline:none;font-family:var(--font);}
+    .input:focus{border-color:var(--p500);background:white;box-shadow:0 0 0 3.5px var(--p100);}
+    textarea.input{resize:vertical;min-height:70px;}
+    .btn{padding:10px 18px;font-size:0.875rem;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font);}
+    .btn-full{width:100%;}
+    .btn-primary{background:linear-gradient(135deg,var(--p500),var(--p600));color:white;box-shadow:var(--sh-sm);}
+    .btn-primary:hover{background:linear-gradient(135deg,var(--p600),var(--p700));}
+    .btn-success{background:var(--s500);color:white;}
+    .btn-warning{background:var(--w500);color:white;}
+    .btn-danger{background:var(--d500);color:white;}
+    .btn-info{background:var(--i500);color:white;}
+    .btn-outline{background:white;border:1.5px solid var(--g200);color:var(--g700);}
+    .btn-outline:hover{border-color:var(--p500);color:var(--p600);}
+    .btn-sm{padding:6px 11px;font-size:0.75rem;}
+    .btn-xs{padding:4px 8px;font-size:0.6875rem;}
+    .btn-ghost{background:transparent;border:none;color:var(--g500);cursor:pointer;padding:6px;}
+    .login-footer{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--g100);font-size:0.6875rem;color:var(--g400);}
+    .login-footer strong{color:var(--p600);}
+    #app-shell{display:none;min-height:100vh;}
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{width:264px;background:var(--sb);color:white;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+    .sb-brand{padding:20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.06);}
+    .sb-brand .logo{width:40px;height:40px;background:linear-gradient(135deg,#1A56DB,#1E40AF);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .sb-brand h2{font-size:0.9375rem;font-weight:800;}
+    .sb-brand span{font-size:0.6875rem;color:#64748B;}
+    .sb-nav{flex:1;padding:14px 12px;overflow-y:auto;}
+    .sb-label{font-size:0.625rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:10px 12px 6px;}
+    .sb-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-md);color:#94A3B8;font-size:0.8125rem;font-weight:600;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;margin-bottom:2px;font-family:var(--font);}
+    .sb-link:hover{background:var(--sb-hover);color:white;}
+    .sb-link.active{background:rgba(26,86,219,0.15);color:#93C5FD;}
+    .sb-link i{width:18px;text-align:center;font-size:0.9375rem;}
+    .sb-link .pill{margin-left:auto;background:var(--d500);color:white;font-size:0.625rem;padding:1px 7px;border-radius:var(--r-full);font-weight:700;}
+    .sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:10px;}
+    .sb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1A56DB,#7C3AED);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.875rem;}
+    .sb-user{flex:1;min-width:0;}
+    .sb-user .n{font-size:0.8125rem;font-weight:700;}
+    .sb-user .r{font-size:0.6875rem;color:#64748B;}
+    .sb-version{padding:8px 16px 14px;font-size:0.625rem;color:#334155;text-align:center;border-top:1px solid rgba(255,255,255,0.04);cursor:pointer;}
+    .sb-version strong{color:#64748B;}
+    .main{margin-left:264px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+    .topbar{min-height:60px;background:white;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;padding:12px 24px;position:sticky;top:0;z-index:50;gap:16px;}
+    .topbar-title{font-size:1.0625rem;font-weight:800;color:var(--g900);}
+    .topbar-title .sub{font-size:0.75rem;font-weight:500;color:var(--g500);margin-top:2px;display:block;}
+    .cache-badge{padding:6px 12px;border-radius:var(--r-full);font-size:0.75rem;font-weight:700;display:flex;align-items:center;gap:6px;}
+    .cache-badge.ok{background:var(--s50);color:var(--s600);}
+    .cache-badge.loading{background:var(--w50);color:var(--w600);}
+    .cache-badge.error{background:var(--d50);color:var(--d600);}
+    .cache-badge.idle{background:var(--g100);color:var(--g600);}
+    .content{padding:24px;flex:1;}
+    .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px;}
+    .dash-card{background:white;border-radius:var(--r-lg);padding:16px 18px;border:1px solid var(--g100);box-shadow:var(--sh-sm);}
+    .dash-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .dash-hd .lbl{display:flex;align-items:center;gap:8px;font-size:0.75rem;font-weight:700;color:var(--g600);text-transform:uppercase;}
+    .dash-hd .ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9375rem;}
+    .dash-hd select{border:1px solid var(--g200);background:var(--g50);border-radius:6px;padding:3px 6px;font-size:0.6875rem;color:var(--g700);font-weight:600;cursor:pointer;font-family:var(--font);}
+    .dash-val{font-size:1.75rem;font-weight:900;color:var(--g900);margin-top:2px;}
+    .dash-sub{font-size:0.6875rem;color:var(--g500);margin-top:2px;}
+    .card{background:white;border-radius:var(--r-lg);border:1px solid var(--g100);box-shadow:var(--sh-sm);overflow:hidden;margin-bottom:20px;}
+    .card-hd{padding:16px 20px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+    .card-hd h3{font-size:0.9375rem;font-weight:800;}
+    .card-hd p{font-size:0.75rem;color:var(--g500);margin-top:2px;}
+    .card-bd{padding:20px;}
+    .tbl{width:100%;border-collapse:collapse;}
+    .tbl th{text-align:left;padding:10px 14px;font-size:0.6875rem;font-weight:700;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200);text-transform:uppercase;white-space:nowrap;}
+    .tbl td{padding:12px 14px;font-size:0.8125rem;border-bottom:1px solid var(--g100);color:var(--g700);}
+    .tbl tr:hover td{background:var(--g25);}
+    .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:var(--r-full);font-size:0.6875rem;font-weight:700;}
+    .b-succ{background:var(--s50);color:var(--s600);}
+    .b-warn{background:var(--w50);color:var(--w600);}
+    .b-dang{background:var(--d50);color:var(--d600);}
+    .b-info{background:var(--p50);color:var(--p600);}
+    .b-gray{background:var(--g100);color:var(--g600);}
+    .view-sec{display:none;}
+    .view-sec.active{display:block;animation:fadeUp 200ms ease;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+    #toast-box{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+    .toast{background:var(--g900);color:white;padding:12px 16px;border-radius:var(--r-md);font-size:0.8125rem;box-shadow:var(--sh-lg);display:flex;align-items:center;gap:10px;min-width:280px;max-width:400px;}
+    .toast.success{background:var(--s600);}
+    .toast.error{background:var(--d600);}
+    .toast.warning{background:var(--w600);}
+    @media(max-width:900px){.sidebar{width:72px;}.main{margin-left:72px;}.sb-brand h2,.sb-brand span,.sb-link span,.sb-user,.sb-version{display:none;}}
+    .fb-layout{display:grid;grid-template-columns:320px 1fr;gap:16px;min-height:600px;}
+    @media(max-width:1024px){.fb-layout{grid-template-columns:1fr;}}
+    .fb-sidebar-col,.fb-editor-col{background:white;border-radius:var(--r-lg);border:1px solid var(--g100);box-shadow:var(--sh-sm);overflow:hidden;}
+    .fb-sidebar-hd{padding:14px 16px;border-bottom:1px solid var(--g100);display:flex;justify-content:space-between;align-items:center;}
+    .fb-sidebar-hd h3{font-size:0.8125rem;font-weight:800;}
+    .fb-section-item{padding:12px 14px;border-bottom:1px solid var(--g100);cursor:pointer;display:flex;align-items:center;gap:10px;}
+    .fb-section-item:hover{background:var(--g25);}
+    .fb-section-item.active{background:var(--p50);border-left:3px solid var(--p500);padding-left:11px;}
+    .fb-section-item .ico{font-size:1.25rem;}
+    .fb-section-item .info{flex:1;min-width:0;}
+    .fb-section-item .name{font-size:0.8125rem;font-weight:700;color:var(--g800);}
+    .fb-section-item .meta{font-size:0.6875rem;color:var(--g500);margin-top:2px;}
+    .fb-editor-hd{padding:16px 20px;background:linear-gradient(135deg,var(--p50),white);border-bottom:1px solid var(--g100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+    .fb-editor-hd h3{font-size:0.9375rem;font-weight:800;}
+    .fb-field-row{background:var(--g25);border:1px solid var(--g200);border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+    .fb-field-info{flex:1;min-width:0;}
+    .fb-field-label{font-size:0.8125rem;font-weight:700;color:var(--g800);}
+    .fb-field-meta{font-size:0.6875rem;color:var(--g500);margin-top:2px;display:flex;gap:6px;}
+    .modal-mask{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+    .modal-mask.active{display:flex;}
+    .modal-box{background:white;border-radius:var(--r-xl);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl);}
+    .modal-box.wide{max-width:900px;}
+    .modal-hd{padding:16px 20px;border-bottom:1px solid var(--g100);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:white;z-index:2;}
+    .modal-hd h3{font-size:1rem;font-weight:800;}
+    .modal-bd{padding:20px;}
+    .modal-ft{padding:14px 20px;border-top:1px solid var(--g100);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
+    .empty-state{text-align:center;padding:48px 20px;color:var(--g500);}
+    .empty-state .em{font-size:48px;opacity:0.35;margin-bottom:12px;}
+    .empty-state h4{font-size:0.9375rem;font-weight:700;color:var(--g700);margin-bottom:6px;}
+    .empty-state p{font-size:0.8125rem;color:var(--g500);}
+    .upload-drop{border:2px dashed var(--g300);border-radius:var(--r-lg);padding:40px 20px;text-align:center;background:var(--g25);cursor:pointer;}
+    .upload-drop:hover{border-color:var(--p500);background:var(--p50);}
+    .upload-drop .em{font-size:48px;margin-bottom:12px;}
+    .progress-bar{width:100%;height:10px;background:var(--g200);border-radius:var(--r-full);overflow:hidden;margin:12px 0;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--p500),var(--s500));width:0%;transition:width 200ms;}
+    .dup-side{background:var(--g25);border:1px solid var(--g200);border-radius:var(--r-md);padding:14px;}
+    .dup-row{display:flex;justify-content:space-between;padding:4px 0;font-size:0.75rem;border-bottom:1px dashed var(--g200);}
+    .dup-row:last-child{border-bottom:none;}
+    .dup-row .k{color:var(--g500);font-weight:600;}
+    .dup-row .v{color:var(--g800);font-weight:700;text-align:right;max-width:60%;word-break:break-word;}
+    .consumers-page{display:flex;flex-direction:column;height:calc(100vh - 108px);}
+    .consumers-header{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:var(--r-lg);padding:16px 20px;border:1px solid var(--p100);flex-shrink:0;margin-bottom:14px;}
+    .consumers-header .row1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+    .consumers-header h3{font-size:1rem;font-weight:800;color:var(--p700);}
+    .search-input-big{width:100%;padding:12px 16px 12px 44px;font-size:0.9375rem;border:2px solid var(--p200);border-radius:var(--r-lg);background:white;outline:none;font-family:var(--font);box-shadow:var(--sh-sm);margin-bottom:10px;}
+    .search-input-big:focus{border-color:var(--p500);box-shadow:0 0 0 3.5px var(--p100);}
+    .search-wrap{position:relative;}
+    .search-wrap i{position:absolute;left:16px;top:14px;color:var(--p500);}
+    .filter-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .filter-chip{background:white;border:1.5px solid var(--g200);border-radius:var(--r-full);padding:5px 11px;font-size:0.75rem;display:flex;align-items:center;gap:6px;}
+    .filter-chip.active{border-color:var(--p500);background:var(--p50);color:var(--p700);}
+    .filter-chip .x{color:var(--d500);font-weight:800;cursor:pointer;font-size:0.9375rem;line-height:1;padding-left:4px;}
+    .filter-chip-add{background:var(--p500);color:white;border-color:var(--p500);font-weight:700;cursor:pointer;}
+    .filter-chip-add:hover{background:var(--p600);}
+    .consumers-info-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px;}
+    .consumers-info-row .info{font-size:0.8125rem;color:var(--g700);font-weight:600;}
+    .consumers-results-scroll{flex:1;overflow:hidden;border-radius:var(--r-lg);border:1px solid var(--g200);background:white;display:flex;flex-direction:column;}
+    .consumers-results-scroll .scroll-inner{flex:1;overflow:auto;}
+    .data-tbl{width:100%;border-collapse:collapse;font-size:0.75rem;}
+    .data-tbl th{position:sticky;top:0;background:var(--g100);padding:8px 12px;text-align:left;font-weight:800;color:var(--g700);border-bottom:2px solid var(--g300);white-space:nowrap;z-index:2;}
+    .data-tbl td{padding:6px 12px;border-bottom:1px solid var(--g100);color:var(--g700);white-space:nowrap;}
+    .data-tbl tr:nth-child(even) td{background:var(--g25);}
+    .avatar-lg{width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--p500),var(--p700));color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;object-fit:cover;}
+    img.avatar-lg{padding:0;}
+    .fp-tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--g100);}
+    .fp-tab{padding:8px 14px;font-size:0.8125rem;font-weight:700;color:var(--g500);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:var(--font);}
+    .fp-tab.active{color:var(--p600);border-bottom-color:var(--p500);}
+    .filter-val-list{max-height:280px;overflow-y:auto;border:1px solid var(--g200);border-radius:var(--r-md);padding:6px;background:var(--g25);}
+    .filter-val-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;}
+    .filter-val-item:hover{background:var(--p50);}
+    .filter-val-item input{width:16px;height:16px;cursor:pointer;}
+    .filter-val-item .txt{font-size:0.8125rem;color:var(--g700);flex:1;}
+    .filter-val-item .cnt{font-size:0.6875rem;color:var(--g500);background:var(--g100);padding:1px 6px;border-radius:4px;}
+    #load-overlay{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--g900);color:white;padding:14px 20px;border-radius:var(--r-lg);box-shadow:var(--sh-xl);display:none;align-items:center;gap:12px;z-index:9998;min-width:320px;max-width:520px;}
+    #load-overlay.active{display:flex;}
+    #load-overlay .pbar{flex:1;height:8px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;margin-top:6px;}
+    #load-overlay .pfill{height:100%;background:linear-gradient(90deg,#60A5FA,#16A34A);width:0%;transition:width 200ms;}
+    .col-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--g25);border:1px solid var(--g200);border-radius:var(--r-md);margin-bottom:6px;}
+    .col-row .col-name{flex:1;font-size:0.8125rem;font-weight:600;color:var(--g800);}
+  </style>
+</head>
+<body>
+
+  <div id="toast-box"></div>
+  <div id="load-overlay">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size:1.25rem;"></i>
+    <div style="flex:1;">
+      <div id="load-text" style="font-size:0.8125rem;font-weight:700;">Loading...</div>
+      <div class="pbar"><div class="pfill" id="load-pfill"></div></div>
+    </div>
+  </div>
+
+  <div id="login-view">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="drop">💧</div>
+        <h1 id="login-title">WASA Admin Console</h1>
+        <p id="login-sub">Enterprise Management System</p>
+      </div>
+      <form onsubmit="doLogin(event)">
+        <div class="form-row"><label>Phone Number</label>
+          <input type="tel" id="l-phone" class="input" placeholder="03001234567" required></div>
+        <div class="form-row"><label>Password</label>
+          <input type="password" id="l-pass" class="input" placeholder="••••••••" required></div>
+        <button type="submit" class="btn btn-primary btn-full" id="l-btn">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+      </form>
+      <div class="login-footer">
+        Developed by <strong id="dev-text">NAFEES</strong> • v<strong id="ver-text">2.8.1.0</strong><br>
+        Secure account access • First-time setup is available when no Admin account exists
+      </div>
+    </div>
+  </div>
+
+  <div id="app-shell">
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sb-brand">
+          <div class="logo">💧</div>
+          <div><h2 id="brand-title">WASA</h2><span id="brand-sub">Admin Console</span></div>
+        </div>
+        <nav class="sb-nav">
+          <div class="sb-label">Overview</div>
+          <button class="sb-link active" data-sec="dashboard" onclick="goSec('dashboard')"><i class="fa-solid fa-gauge-high"></i> <span>Dashboard</span></button>
+          <button class="sb-link" data-sec="consumers" onclick="goSec('consumers')"><i class="fa-solid fa-address-book"></i> <span id="lbl-consumers">Consumers</span></button>
+          <div class="sb-label">People</div>
+          <button class="sb-link" data-sec="pending" onclick="goSec('pending')"><i class="fa-solid fa-user-clock"></i> <span>Pending Requests</span><span class="pill" id="pending-pill" style="display:none;">0</span></button>
+          <button class="sb-link" data-sec="officers" onclick="goSec('officers')"><i class="fa-solid fa-users"></i> <span>Officers Directory</span></button>
+          <div class="sb-label">Operations</div>
+          <button class="sb-link" data-sec="activities" onclick="goSec('activities')"><i class="fa-solid fa-clipboard-list"></i> <span>Field Activities</span></button>
+          <button class="sb-link" data-sec="formbuilder" onclick="goSec('formbuilder')"><i class="fa-solid fa-list-check"></i> <span>Form Builder</span></button>
+          <button class="sb-link" data-sec="uploads" onclick="goSec('uploads')"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Bulk Upload</span></button>
+          <button class="sb-link" data-sec="duplicates" onclick="goSec('duplicates')"><i class="fa-solid fa-copy"></i> <span>Duplicates Inbox</span></button>
+          <button class="sb-link" data-sec="corrections" onclick="goSec('corrections')"><i class="fa-solid fa-pen-to-square"></i> <span>Correction Requests</span></button>
+          <div class="sb-label">Configuration</div>
+          <button class="sb-link" data-sec="settings" onclick="goSec('settings')"><i class="fa-solid fa-gear"></i> <span>System Settings</span></button>
+          <button class="sb-link" data-sec="branding" onclick="goSec('branding')" id="link-branding" style="display:none;"><i class="fa-solid fa-palette"></i> <span>🔐 Branding</span></button>
+        </nav>
+        <div class="sb-foot">
+          <div class="sb-avatar" id="me-avatar">A</div>
+          <div class="sb-user"><div class="n" id="me-name">Admin</div><div class="r" id="me-role">Admin</div></div>
+          <button class="btn-ghost" onclick="doLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+        </div>
+        <div class="sb-version">Developed by <strong id="dev-side">NAFEES</strong> • v<span id="ver-side">2.8.1.0</span></div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div><div class="topbar-title" id="page-title">Dashboard <span class="sub" id="page-sub">Overview</span></div></div>
+          <div id="cache-status-badge" class="cache-badge idle"><i class="fa-solid fa-circle"></i> <span>Ready</span></div>
+        </header>
+
+        <div class="content">
+
+          <!-- DASHBOARD -->
+          <div id="sec-dashboard" class="view-sec active">
+            <h3 style="font-size:0.9375rem;font-weight:800;margin-bottom:12px;">📊 Operations Summary</h3>
+            <div class="dash-grid">
+              <div class="dash-card"><div class="dash-hd"><div class="lbl"><div class="ico" style="background:var(--p50);color:var(--p500);">📋</div>Activities</div><select id="ds-activities-f" onchange="renderDashboardCards()"><option value="today">Today</option><option value="week">7 Days</option><option value="month">30 Days</option><option value="all" selected>All</option></select></div><div class="dash-val" id="ds-activities-v">—</div><div class="dash-sub">Total submissions</div></div>
+              <div class="dash-card"><div class="dash-hd"><div class="lbl"><div class="ico" style="background:var(--s50);color:var(--s500);">💰</div>Recovery</div><select id="ds-recovery-f" onchange="renderDashboardCards()"><option value="today">Today</option><option value="week">7 Days</option><option value="month">30 Days</option><option value="all" selected>All</option></select></div><div class="dash-val" id="ds-recovery-v" style="color:var(--s600);">Rs. 0</div><div class="dash-sub">Amount collected</div></div>
+              <div class="dash-card"><div class="dash-hd"><div class="lbl"><div class="ico" style="background:var(--i50);color:var(--i500);">🏠</div>Consumers</div><select id="ds-consumers-f" onchange="renderDashboardCards()" disabled><option value="all">All</option></select></div><div class="dash-val" id="ds-consumers-v">—</div><div class="dash-sub">Load Consumers page to see</div></div>
+              <div class="dash-card"><div class="dash-hd"><div class="lbl"><div class="ico" style="background:var(--w50);color:var(--w500);">👥</div>Officers</div><select id="ds-officers-f" onchange="renderDashboardCards()"><option value="all" selected>All</option></select></div><div class="dash-val" id="ds-officers-v">—</div><div class="dash-sub">Active accounts</div></div>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <div><h3>🕒 Recent Activity Feed</h3></div>
+                <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+              </div>
+              <div class="card-bd" style="padding:0;">
+                <table class="tbl"><thead><tr><th>Officer</th><th>Activity</th><th>Status</th><th>Time</th></tr></thead>
+                <tbody id="feed-tbody"><tr><td colspan="4" class="empty-state"><div class="em">📭</div><h4>No activity yet</h4></td></tr></tbody></table>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONSUMERS -->
+          <div id="sec-consumers" class="view-sec">
+            <div class="consumers-page">
+              <div class="consumers-header">
+                <div class="row1">
+                  <div><h3>🔍 <span id="cn-title">Consumers</span> — Data Explorer</h3><p style="font-size:0.75rem;color:var(--g600);">Load once, then search/filter locally</p></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-outline btn-sm" onclick="reloadConsumers()"><i class="fa-solid fa-arrows-rotate"></i> Reload Data</button>
+                    <button class="btn btn-outline btn-sm" onclick="openColumnMgrModal()"><i class="fa-solid fa-table-columns"></i> Columns</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddConsumerModal()"><i class="fa-solid fa-plus"></i> Add Consumer</button>
+                  </div>
+                </div>
+                <div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="hero-search" class="search-input-big" placeholder="Type anything: name, phone, CNIC, account..." oninput="onSearchInput(this.value)"></div>
+                <div class="filter-chips" id="filter-chips"><div class="filter-chip filter-chip-add" onclick="openFilterPickerModal()"><i class="fa-solid fa-filter"></i> Add Filter</div></div>
+                <div class="consumers-info-row">
+                  <div class="info" id="result-info">Click Reload Data to load consumers</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-success btn-sm" onclick="downloadResults('filtered')"><i class="fa-solid fa-file-excel"></i> Excel (Filtered)</button>
+                    <button class="btn btn-outline btn-sm" onclick="downloadResults('all')"><i class="fa-solid fa-file-arrow-down"></i> Excel (All)</button>
+                  </div>
+                </div>
+              </div>
+              <div class="consumers-results-scroll">
+                <div class="scroll-inner" id="results-scroll-inner">
+                  <div class="empty-state"><div class="em">📥</div><h4>Consumers not loaded</h4><p>Click <b>Reload Data</b> above to fetch consumers from Firebase.</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PENDING -->
+          <div id="sec-pending" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>⏳ Officer Account Requests</h3></div><button class="btn btn-outline btn-sm" onclick="loadPending()"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+              <div class="card-bd" style="padding:0;overflow-x:auto;"><table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>CNIC</th><th>Designation</th><th style="text-align:right;">Action</th></tr></thead><tbody id="pending-tbody"></tbody></table></div>
+            </div>
+          </div>
+
+          <!-- OFFICERS -->
+          <div id="sec-officers" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>👥 Officers Directory</h3></div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-outline btn-sm" onclick="loadOfficers()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                  <button class="btn btn-outline btn-sm" onclick="exportOfficersXL()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                  <button class="btn btn-primary btn-sm" onclick="openOfficerEditModal(null)"><i class="fa-solid fa-plus"></i> Add Officer</button>
+                </div>
+              </div>
+              <div class="card-bd" style="padding:0;overflow-x:auto;"><table class="tbl"><thead><tr><th>Photo</th><th>Name</th><th>Phone</th><th>Role</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead><tbody id="officers-tbody"></tbody></table></div>
+            </div>
+          </div>
+
+          <!-- ACTIVITIES -->
+          <div id="sec-activities" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>📋 All Field Activities</h3></div>
+                <div style="display:flex;gap:8px;">
+                  <select id="act-filter-time" class="input" style="width:auto;padding:6px 10px;font-size:0.75rem;" onchange="loadActivities()">
+                    <option value="all">All Time</option><option value="today">Today</option><option value="week">7 Days</option><option value="month">30 Days</option>
+                  </select>
+                  <button class="btn btn-outline btn-sm" onclick="loadActivities()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                  <button class="btn btn-outline btn-sm" onclick="exportActivitiesXL()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                </div>
+              </div>
+              <div class="card-bd" id="activities-body"><div class="empty-state"><div class="em">📭</div><h4>Click Refresh</h4></div></div>
+            </div>
+          </div>
+
+          <!-- FORM BUILDER -->
+          <div id="sec-formbuilder" class="view-sec">
+            <div class="card-hd" style="background:white;border-radius:var(--r-lg);border:1px solid var(--g100);margin-bottom:16px;padding:16px 20px;">
+              <div><h3 style="font-size:1rem;font-weight:800;">🧱 Form Builder</h3><p style="font-size:0.8125rem;color:var(--g500);margin-top:4px;">Design officer app sections</p></div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="renderFormBuilder(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                <button class="btn btn-primary btn-sm" onclick="openSectionModal()"><i class="fa-solid fa-plus"></i> Add Section</button>
+              </div>
+            </div>
+            <div class="fb-layout">
+              <div class="fb-sidebar-col">
+                <div class="fb-sidebar-hd"><h3>📚 Sections</h3><span id="fb-count" class="badge b-info">0</span></div>
+                <div id="fb-sections-list"></div>
+              </div>
+              <div class="fb-editor-col">
+                <div class="fb-editor-hd">
+                  <div><h3 id="fb-editor-title">Select a section</h3><p id="fb-editor-sub" style="font-size:0.75rem;color:var(--g500);margin-top:2px;">Or add a new</p></div>
+                  <div id="fb-editor-actions" style="display:none;gap:6px;">
+                    <button class="btn btn-outline btn-sm" onclick="editCurrentSection()"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-warning btn-sm" onclick="toggleCurrentSection()"><i class="fa-solid fa-power-off"></i> <span id="fb-toggle-txt">Disable</span></button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteCurrentSection()"><i class="fa-solid fa-trash"></i> Delete</button>
+                  </div>
+                </div>
+                <div class="card-bd" id="fb-editor-body"><div class="empty-state"><div class="em">👈</div><h4>No section selected</h4></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BULK UPLOAD -->
+          <div id="sec-uploads" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>☁️ Bulk Data Upload</h3><p>Excel/CSV import</p></div></div>
+              <div class="card-bd">
+                <div class="form-row"><label>Target</label>
+                  <select id="upl-target" class="input">
+                    <option value="wasaConsumers">📊 Consumers</option>
+                    <option value="wasaActivities">📋 Activities</option>
+                  </select>
+                </div>
+                <div class="form-row"><label>Duplicate Column</label><input type="text" id="upl-dup-col" class="input" value="CONSUMER_NO"></div>
+                <div class="upload-drop" onclick="document.getElementById('upl-file').click()">
+                  <div class="em">📤</div><div style="font-weight:800;font-size:1rem;color:var(--g700);">Click or drop Excel/CSV</div>
+                  <input type="file" id="upl-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="onUploadFile(this)">
+                </div>
+                <div id="upl-preview" style="display:none;margin-top:20px;">
+                  <div id="upl-info" style="background:var(--p50);padding:12px;border-radius:var(--r-md);margin-bottom:12px;font-size:0.8125rem;"></div>
+                  <div class="progress-bar" id="upl-progress-wrap" style="display:none;"><div class="progress-fill" id="upl-progress"></div></div>
+                  <div id="upl-progress-text" style="text-align:center;font-size:0.75rem;color:var(--g600);margin-bottom:12px;"></div>
+                  <div style="overflow:auto;max-height:300px;border:1px solid var(--g200);border-radius:var(--r-md);margin-bottom:12px;" id="upl-preview-table"></div>
+                  <button class="btn btn-primary btn-full" id="upl-start-btn" onclick="startBulkUpload()"><i class="fa-solid fa-cloud-arrow-up"></i> Start Upload</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DUPLICATES -->
+          <div id="sec-duplicates" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>📑 Duplicates Inbox</h3></div><button class="btn btn-outline btn-sm" onclick="loadDuplicates()"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+              <div class="card-bd" id="dup-body"><div class="empty-state"><div class="em">✅</div><h4>No duplicates</h4></div></div>
+            </div>
+          </div>
+
+          <!-- CORRECTIONS -->
+          <div id="sec-corrections" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>✏️ Correction Requests</h3><p>Approve with your edits + view officer details</p></div><button class="btn btn-outline btn-sm" onclick="loadCorrections()"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+              <div class="card-bd" id="corr-body"><div class="empty-state"><div class="em">📭</div><h4>No pending corrections</h4></div></div>
+            </div>
+          </div>
+
+          <!-- BRANDING (secret) -->
+          <div id="sec-branding" class="view-sec">
+            <div class="card">
+              <div class="card-hd"><div><h3>🎨 App Branding</h3></div></div>
+              <div class="card-bd">
+                <div class="form-row"><label>Admin Title</label><input type="text" id="cf-brand-title" class="input"></div>
+                <div class="form-row"><label>Admin Subtitle</label><input type="text" id="cf-brand-sub" class="input"></div>
+                <div class="form-row"><label>Login Title</label><input type="text" id="cf-login-title" class="input"></div>
+                <div class="form-row"><label>Login Subtitle</label><input type="text" id="cf-login-sub" class="input"></div>
+                <div class="form-row"><label>Officer Title</label><input type="text" id="cf-officer-title" class="input"></div>
+                <div class="form-row"><label>Officer Subtitle</label><input type="text" id="cf-officer-sub" class="input"></div>
+                <div class="form-row"><label>Consumers Label</label><input type="text" id="cf-consumers-label" class="input"></div>
+                <div class="form-row"><label>Version</label><input type="text" id="cf-version" class="input"></div>
+                <div class="form-row"><label>Developer</label><input type="text" id="cf-developer" class="input"></div>
+                <button class="btn btn-primary btn-full" onclick="saveBranding()"><i class="fa-solid fa-check"></i> Save</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SETTINGS -->
+          <div id="sec-settings" class="view-sec">
+            <div class="card" style="max-width:720px;">
+              <div class="card-hd"><div><h3>⚙️ System Settings</h3></div></div>
+              <div class="card-bd">
+                <div style="background:var(--p50);padding:14px;border-radius:var(--r-md);font-size:0.8125rem;margin-bottom:16px;border-left:3px solid var(--p500);">
+                  <div><strong>Firebase:</strong> <span id="set-project">-</span></div>
+                  <div><strong>Version:</strong> <span id="set-ver">2.8.1.0</span></div>
+                  <div><strong>Logged in:</strong> <span id="set-me">Admin</span></div>
+                  <div><strong>Consumers loaded:</strong> <span id="set-cache-info">Not loaded</span></div>
+                </div>
+                <div style="background:var(--w50);padding:16px;border-radius:var(--r-md);border-left:3px solid var(--w500);margin-bottom:16px;">
+                  <h4 style="font-size:0.8125rem;font-weight:800;color:var(--w600);margin-bottom:10px;">🔐 Developer Mode</h4>
+                  <div class="form-row"><input type="password" id="dev-key" class="input" placeholder="Enter developer key..."></div>
+                  <button class="btn btn-warning btn-sm" onclick="unlockDevMode()"><i class="fa-solid fa-key"></i> Unlock</button>
+                </div>
+                <div id="super-only" style="display:none;background:var(--d50);padding:16px;border-radius:var(--r-md);border-left:3px solid var(--d500);margin-bottom:16px;">
+                  <h4 style="font-size:0.8125rem;font-weight:800;color:var(--d600);margin-bottom:10px;">👑 Super Admin Password</h4>
+                  <div class="form-row"><label>New Password</label><input type="password" id="new-super-pass" class="input"></div>
+                  <button class="btn btn-danger btn-sm" onclick="changeSuperPassword()"><i class="fa-solid fa-key"></i> Update</button>
+                </div>
+                <button class="btn btn-outline btn-full" onclick="doLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-mask" id="section-modal"><div class="modal-box"><div class="modal-hd"><h3 id="sm-title">Add Section</h3><button class="btn-ghost" onclick="closeModal('section-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div class="form-row"><label>Name *</label><input type="text" id="sm-name" class="input"></div><div class="form-row"><label>Icon</label><input type="text" id="sm-icon" class="input" placeholder="🏠" maxlength="4"></div><div class="form-row"><label>Description</label><input type="text" id="sm-desc" class="input"></div><div class="form-row"><label>Color</label><select id="sm-color" class="input"><option value="primary">Blue</option><option value="success">Green</option><option value="warning">Amber</option><option value="danger">Red</option><option value="info">Sky</option></select></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('section-modal')">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveSection()">Save</button></div></div></div>
+
+  <div class="modal-mask" id="field-modal"><div class="modal-box"><div class="modal-hd"><h3 id="fm-title">Add Field</h3><button class="btn-ghost" onclick="closeModal('field-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div class="form-row"><label>Type *</label><select id="fm-type" class="input" onchange="onFieldTypeChange()"><option value="text">📝 Text</option><option value="textarea">📄 Textarea</option><option value="number">🔢 Number</option><option value="phone">📱 Phone</option><option value="cnic">🆔 CNIC</option><option value="email">📧 Email</option><option value="date">📅 Date</option><option value="time">🕒 Time</option><option value="dropdown">📋 Dropdown</option><option value="radio">⚪ Radio</option><option value="checkbox">☑️ Checkbox</option><option value="amount">💰 Amount</option><option value="photo">📷 Photo</option><option value="gps">📍 GPS</option><option value="signature">✍️ Signature</option></select></div><div class="form-row"><label>Label *</label><input type="text" id="fm-label" class="input"></div><div class="form-row"><label>Placeholder</label><input type="text" id="fm-placeholder" class="input"></div><div class="form-row" id="fm-opts-row" style="display:none;"><label>Options (comma-separated)</label><input type="text" id="fm-options" class="input"></div><div class="form-row"><label style="display:flex;align-items:center;gap:8px;text-transform:none;"><input type="checkbox" id="fm-required" style="width:16px;height:16px;"> <strong>Required Field</strong></label></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('field-modal')">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveField()">Save</button></div></div></div>
+
+  <div class="modal-mask" id="officer-modal"><div class="modal-box"><div class="modal-hd"><h3 id="om-title">Edit Officer</h3><button class="btn-ghost" onclick="closeModal('officer-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div style="text-align:center;margin-bottom:16px;"><div id="om-avatar" class="avatar-lg" style="margin:0 auto 8px;">?</div><input type="file" id="om-photo-file" accept="image/*" style="display:none;" onchange="onOfficerPhotoSelect(this)"><button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('om-photo-file').click()"><i class="fa-solid fa-camera"></i> Change Photo</button></div><div class="form-row"><label>Name *</label><input type="text" id="om-name" class="input"></div><div class="form-row"><label>Phone *</label><input type="tel" id="om-phone" class="input" pattern="[0-9]{11}"></div><div class="form-row"><label>CNIC</label><input type="text" id="om-cnic" class="input" pattern="[0-9]{13}"></div><div class="form-row"><label>Designation</label><input type="text" id="om-desig" class="input"></div><div class="form-row"><label>Role *</label><select id="om-role" class="input"><option value="officer">Field/Recovery Officer</option><option value="manager">Management</option><option value="admin">Admin</option></select></div><div class="form-row"><label>Status</label><select id="om-status" class="input"><option value="active">Active</option><option value="pending">Pending</option><option value="disabled">Disabled</option></select></div><div class="form-row"><label>Password</label><div style="display:flex;gap:6px;"><input type="text" id="om-pass" class="input"><button type="button" class="btn btn-outline btn-sm" onclick="genRandomPass()"><i class="fa-solid fa-dice"></i></button></div></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('officer-modal')">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveOfficerEdit()">Save</button></div></div></div>
+
+  <div class="modal-mask" id="filter-picker-modal"><div class="modal-box"><div class="modal-hd"><h3>➕ Add Column Filter</h3><button class="btn-ghost" onclick="closeModal('filter-picker-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div class="form-row"><label>Select Column</label><select id="fp-column" class="input" onchange="fpRebuild()"></select></div><div class="fp-tabs"><button class="fp-tab active" data-mode="text" onclick="fpSwitch('text')">📝 Text</button><button class="fp-tab" data-mode="multi" onclick="fpSwitch('multi')">☑️ Multi-select</button></div><div id="fp-text-mode"><div class="form-row"><label>Value</label><input type="text" id="fp-text" class="input" placeholder="e.g. hospital..."></div></div><div id="fp-multi-mode" style="display:none;"><div class="form-row"><label>Search values</label><input type="text" id="fp-search" class="input" oninput="fpRebuild()"></div><div class="filter-val-list" id="fp-val-list"></div><div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:0.6875rem;"><button class="btn btn-outline btn-xs" onclick="fpSelectAll()">Select All</button><button class="btn btn-outline btn-xs" onclick="fpClearAll()">Clear</button><span id="fp-count">0 selected</span></div></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('filter-picker-modal')">Cancel</button><button class="btn btn-primary btn-sm" onclick="applyFilter()"><i class="fa-solid fa-check"></i> Apply</button></div></div></div>
+
+  <div class="modal-mask" id="add-consumer-modal"><div class="modal-box wide"><div class="modal-hd"><h3>➕ Add New Consumer</h3><button class="btn-ghost" onclick="closeModal('add-consumer-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div id="ac-fields-container"></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('add-consumer-modal')">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveNewConsumer()">Save</button></div></div></div>
+
+  <div class="modal-mask" id="edit-row-modal"><div class="modal-box wide"><div class="modal-hd"><h3>✏️ Edit Record</h3><button class="btn-ghost" onclick="closeModal('edit-row-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div id="er-fields-container"></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('edit-row-modal')">Cancel</button><button class="btn btn-danger btn-sm" onclick="downloadEditingRowPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button><button class="btn btn-primary btn-sm" onclick="saveEditedRow()">Save</button></div></div></div>
+
+  <div class="modal-mask" id="col-mgr-modal"><div class="modal-box"><div class="modal-hd"><h3>🧮 Manage Columns</h3><button class="btn-ghost" onclick="closeModal('col-mgr-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd"><div class="form-row" style="display:flex;gap:6px;"><input type="text" id="new-col-name" class="input" placeholder="New column name"><button class="btn btn-primary btn-sm" onclick="addNewColumn()"><i class="fa-solid fa-plus"></i> Add</button></div><hr style="margin:14px 0;border:none;border-top:1px solid var(--g200);"><div id="col-list"></div></div><div class="modal-ft"><button class="btn btn-outline btn-sm" onclick="closeModal('col-mgr-modal')">Close</button><button class="btn btn-primary btn-sm" onclick="saveColumnOrder()">Save Order</button></div></div></div>
+
+  <div class="modal-mask" id="detail-modal"><div class="modal-box wide"><div class="modal-hd"><h3 id="dm-title">Detail</h3><button class="btn-ghost" onclick="closeModal('detail-modal')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-bd" id="dm-body"></div><div class="modal-ft" id="dm-footer"></div></div></div>
+
+  <script>
+  /* ===== Firebase Config (change if new project) ===== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBSf45vEBv_PqEnA4jEKUfGcZvLcru-3rU",
+    authDomain: "wasa-app-ksr.firebaseapp.com",
+    projectId: "wasa-app-ksr",
+    storageBucket: "wasa-app-ksr.firebasestorage.app",
+    messagingSenderId: "572534729136",
+    appId: "1:572534729136:web:c172481da5a37756c50e75",
+    measurementId: "G-363L5VJD0R"
+  };
+  const cloudinaryConfig = { cloudName: "rlkzsmm2", uploadPreset: "wasa-app-ksr" };
+  /* ================================================== */
+
+  if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let me = null;
+  let settings = defaultSettings();
+  let sections = [];
+  let currentSectionId=null, editingFieldIndex=-1, editingSectionId=null;
+  let editingOfficerId=null, officerPhotoBlob=null;
+  let uploadedRows=[], uploadedHeaders=[];
+  let consumersCache = null;                     // ONLY loaded when user clicks Reload
+  let consumersLoading = false;
+  let activeFilters=[], currentSearchText='';
+  let managedColumns=[];
+  let fpMode='text', fpSelected=new Set();
+  let editingRow=null;
+
+  const SUPER_PHONE='__LEGACY_DISABLED__', SUPER_PASS='__LEGACY_DISABLED__', DEV_KEY='__LEGACY_DISABLED__';
+
+  function defaultSettings(){return{brandTitle:'WASA',brandSub:'Admin Console',loginTitle:'WASA Admin Console',loginSub:'Enterprise Management System',officerTitle:'WASA',officerSub:'Field Officer Portal',consumersLabel:'Consumers',version:'2.8.1.0',developer:'NAFEES',consumerColumns:[]};}
+
+  function toast(msg,type='info'){const box=document.getElementById('toast-box');const t=document.createElement('div');t.className='toast '+type;const ico=type==='success'?'circle-check':type==='error'?'circle-exclamation':type==='warning'?'triangle-exclamation':'circle-info';t.innerHTML=`<i class="fa-solid fa-${ico}"></i> <span>${msg}</span>`;box.appendChild(t);setTimeout(()=>t.remove(),4500);}
+  function showLoad(txt){document.getElementById('load-overlay').classList.add('active');document.getElementById('load-text').textContent=txt;document.getElementById('load-pfill').style.width='0%';}
+  function updateLoad(txt,pct){document.getElementById('load-text').textContent=txt;document.getElementById('load-pfill').style.width=(pct||0)+'%';}
+  function hideLoad(){document.getElementById('load-overlay').classList.remove('active');}
+  function updateCacheBadge(state,msg){const b=document.getElementById('cache-status-badge');b.className='cache-badge '+state;const i=state==='loading'?'fa-spinner fa-spin':state==='ok'?'fa-circle-check':state==='error'?'fa-triangle-exclamation':'fa-circle';b.innerHTML=`<i class="fa-solid ${i}"></i> <span>${msg}</span>`;}
+
+  function goSec(name){
+    document.querySelectorAll('.view-sec').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.sb-link').forEach(n=>n.classList.remove('active'));
+    const sec=document.getElementById('sec-'+name); if(sec)sec.classList.add('active');
+    document.querySelectorAll('.sb-link').forEach(b=>{if(b.dataset.sec===name)b.classList.add('active');});
+    const titles={dashboard:['Dashboard','Overview'],consumers:[settings.consumersLabel||'Consumers','Search & filter'],pending:['Pending Requests','Applications'],officers:['Officers','Accounts'],activities:['Field Activities','Submissions'],formbuilder:['Form Builder','Design sections'],uploads:['Bulk Upload','CSV/Excel'],duplicates:['Duplicates','Review'],corrections:['Corrections','Officer edits'],branding:['🔐 Branding','Developer'],settings:['System Settings','Security']};
+    const [t,s]=titles[name]||[name,''];
+    document.getElementById('page-title').innerHTML=`${t} <span class="sub">${s}</span>`;
+
+    // 👇 Sirf current page ka data load — full app reload nahi
+    if(name==='dashboard') loadDashboard();
+    if(name==='consumers') {
+      if(consumersCache) renderConsumersResults();
+      else {
+        document.getElementById('result-info').textContent='Click Reload Data to load consumers';
+        document.getElementById('results-scroll-inner').innerHTML=`<div class="empty-state"><div class="em">📥</div><h4>Consumers not loaded</h4><p>Click <b>Reload Data</b> above.</p></div>`;
+      }
+    }
+    if(name==='pending') loadPending();
+    if(name==='officers') loadOfficers();
+    if(name==='activities') loadActivities();
+    if(name==='formbuilder') renderFormBuilder();
+    if(name==='duplicates') loadDuplicates();
+    if(name==='corrections') loadCorrections();
+    if(name==='branding') fillBrandingForm();
+    if(name==='settings'){document.getElementById('super-only').style.display=(me&&me.role==='superadmin')?'block':'none';document.getElementById('set-me').textContent=me?me.name:'Guest';document.getElementById('set-project').textContent=firebaseConfig.projectId;document.getElementById('set-cache-info').textContent=consumersCache?`${consumersCache.length.toLocaleString()} loaded`:'Not loaded';}
+  }
+
+  function unlockDevMode(){const k=document.getElementById('dev-key').value.trim();if(k===DEV_KEY){document.getElementById('link-branding').style.display='flex';toast('🔓 Unlocked','success');document.getElementById('dev-key').value='';}else toast('Invalid key','error');}
+
+  async function loadSettings(){try{const doc=await db.collection('wasaSettings').doc('main').get();if(doc.exists)settings={...defaultSettings(),...doc.data()};else await db.collection('wasaSettings').doc('main').set(defaultSettings());}catch(_){}applySettingsToUI();}
+  function applySettingsToUI(){document.getElementById('login-title').textContent=settings.loginTitle;document.getElementById('login-sub').textContent=settings.loginSub;document.getElementById('brand-title').textContent=settings.brandTitle;document.getElementById('brand-sub').textContent=settings.brandSub;document.getElementById('ver-text').textContent=settings.version;document.getElementById('ver-side').textContent=settings.version;document.getElementById('set-ver').textContent=settings.version;document.getElementById('dev-text').textContent=settings.developer;document.getElementById('dev-side').textContent=settings.developer;document.getElementById('lbl-consumers').textContent=settings.consumersLabel||'Consumers';document.getElementById('cn-title').textContent=settings.consumersLabel||'Consumers';document.title=settings.brandTitle+' — '+settings.brandSub;}
+  function fillBrandingForm(){const map={'cf-brand-title':'brandTitle','cf-brand-sub':'brandSub','cf-login-title':'loginTitle','cf-login-sub':'loginSub','cf-officer-title':'officerTitle','cf-officer-sub':'officerSub','cf-consumers-label':'consumersLabel','cf-version':'version','cf-developer':'developer'};Object.keys(map).forEach(id=>document.getElementById(id).value=settings[map[id]]||'');}
+  async function saveBranding(){const nu={brandTitle:document.getElementById('cf-brand-title').value.trim(),brandSub:document.getElementById('cf-brand-sub').value.trim(),loginTitle:document.getElementById('cf-login-title').value.trim(),loginSub:document.getElementById('cf-login-sub').value.trim(),officerTitle:document.getElementById('cf-officer-title').value.trim(),officerSub:document.getElementById('cf-officer-sub').value.trim(),consumersLabel:document.getElementById('cf-consumers-label').value.trim()||'Consumers',version:document.getElementById('cf-version').value.trim(),developer:document.getElementById('cf-developer').value.trim()};try{await db.collection('wasaSettings').doc('main').set({...settings,...nu},{merge:true});settings={...settings,...nu};applySettingsToUI();toast('Saved 🎨','success');}catch(e){toast('Fail: '+e.message,'error');}}
+
+  /* ---------- Login (super simple, always works) ---------- */
+  async function doLogin(e){
+    e.preventDefault();
+    const phone=document.getElementById('l-phone').value.trim();
+    const pass=document.getElementById('l-pass').value.trim();
+    const btn=document.getElementById('l-btn');
+    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+    try{
+      // Super Admin
+      if(phone===SUPER_PHONE){
+        let eff=SUPER_PASS;
+        try{const d=await db.collection('wasaSettings').doc('super').get();if(d.exists&&d.data().pass)eff=d.data().pass;}catch(_){}
+        if(pass===eff){me={id:'__super__',name:'Anonymous',phone,role:'superadmin',designation:'System Owner'};enterApp();return;}
+        toast('Invalid super credentials','error');return;
+      }
+      // Default admin (works offline too)
+      if(false && phone==='__legacy_admin__' && pass==='__legacy_password__'){
+        me={id:'__default__',name:'Admin',phone,role:'admin',designation:'Administrator'};
+        try{await db.collection('wasaUsers').doc('default_admin').set({name:'Admin',phone,passwordHash:'__legacy_disabled__',role:'admin',designation:'Administrator',status:'active'},{merge:true});}catch(_){}
+        enterApp();return;
+      }
+      // Firestore login
+      const snap=await db.collection('wasaUsers').where('phone','==',phone).where('passHash','==',pass).get();
+      if(snap.empty){toast('Invalid credentials','error');return;}
+      const u=snap.docs[0].data();
+      if((u.role||'').toLowerCase()==='superadmin'){toast('Super admin: secret only','error');return;}
+      if(u.status!=='active'){toast('Account not active','error');return;}
+      if(!['admin','manager'].includes((u.role||'').toLowerCase())){toast('Admin/Manager only','error');return;}
+      me={id:snap.docs[0].id,...u};
+      enterApp();
+    }catch(err){toast('Login error: '+err.message,'error');console.error(err);}
+    finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Sign In';}
+  }
+
+  function enterApp(){
+    document.getElementById('login-view').style.display='none';
+    document.getElementById('app-shell').style.display='block';
+    document.getElementById('me-name').textContent=me.name;
+    document.getElementById('me-role').textContent=me.role==='superadmin'?'👑 System Owner':(me.designation||'Admin');
+    document.getElementById('me-avatar').textContent=(me.name||'A').charAt(0).toUpperCase();
+    toast(`Welcome, ${me.name}!`,'success');
+    updateCacheBadge('idle','Ready');
+    goSec('dashboard'); // sirf dashboard load hoga — consumers NOT
+  }
+
+  function doLogout(){me=null;document.getElementById('app-shell').style.display='none';document.getElementById('login-view').style.display='flex';document.getElementById('l-phone').value='';document.getElementById('l-pass').value='';document.getElementById('link-branding').style.display='none';consumersCache=null;}
+
+  async function changeSuperPassword(){if(!me||me.role!=='superadmin')return toast('Super only','error');const np=document.getElementById('new-super-pass').value.trim();if(np.length<6)return toast('Min 6','warning');try{await db.collection('wasaSettings').doc('super').set({pass:np},{merge:true});document.getElementById('new-super-pass').value='';toast('Updated','success');}catch(e){toast('Fail','error');}}
+
+  /* ---------- DASHBOARD (light — no consumers load) ---------- */
+  async function loadDashboard(){
+    try{
+      const [actSnap,usrSnap]=await Promise.all([
+        db.collection('wasaActivities').orderBy('timestamp','desc').limit(200).get(),
+        db.collection('wasaUsers').get()
+      ]);
+      const activities=actSnap.docs.map(d=>d.data());
+      const users=usrSnap.docs.map(d=>d.data()).filter(u=>(u.role||'').toLowerCase()!=='superadmin');
+      window._dashActivities=activities;
+      window._dashUsers=users;
+      renderDashboardCards();
+      const pending=users.filter(u=>u.status==='pending').length;
+      const pill=document.getElementById('pending-pill');
+      if(pending>0){pill.style.display='inline-flex';pill.textContent=pending;}else pill.style.display='none';
+      const feed=activities.filter(a=>a.timestamp).slice(0,10);
+      const tb=document.getElementById('feed-tbody');
+      if(!feed.length)tb.innerHTML=`<tr><td colspan="4" class="empty-state"><div class="em">📭</div><h4>No activity</h4></td></tr>`;
+      else tb.innerHTML=feed.map(a=>`<tr><td><strong>${escapeHtml(a.officerName||'-')}</strong></td><td><span class="badge b-info">${escapeHtml(a.activityType||'entry')}</span></td><td><span class="badge b-succ">${escapeHtml(a.status||'submitted')}</span></td><td style="color:var(--g500);font-size:0.75rem;">${new Date(a.timestamp.seconds*1000).toLocaleString()}</td></tr>`).join('');
+    }catch(e){toast('Dashboard: '+e.message,'error');}
+  }
+  function filterByTime(list,mode){if(mode==='all')return list;const now=Date.now();if(mode==='today'){const t=new Date();t.setHours(0,0,0,0);return list.filter(a=>((a.timestamp&&a.timestamp.seconds*1000)||0)>=t.getTime());}if(mode==='week')return list.filter(a=>(now-((a.timestamp&&a.timestamp.seconds*1000)||0))<=7*86400000);if(mode==='month')return list.filter(a=>(now-((a.timestamp&&a.timestamp.seconds*1000)||0))<=30*86400000);return list;}
+  function renderDashboardCards(){
+    const acts=window._dashActivities||[];
+    const users=window._dashUsers||[];
+    document.getElementById('ds-activities-v').textContent=filterByTime(acts,document.getElementById('ds-activities-f').value).length.toLocaleString();
+    document.getElementById('ds-recovery-v').textContent='Rs. '+filterByTime(acts,document.getElementById('ds-recovery-f').value).reduce((s,a)=>s+(Number(a.amount)||0),0).toLocaleString();
+    document.getElementById('ds-consumers-v').textContent = consumersCache ? consumersCache.length.toLocaleString() : '—';
+    document.getElementById('ds-officers-v').textContent=users.filter(u=>u.status==='active').length;
+  }
+
+  /* ---------- FORM BUILDER ---------- */
+  function defaultSections(){return[{key:'property_'+Date.now(),name:'Property Survey',icon:'🏠',description:'Verify owner & CNIC',color:'primary',isActive:true,order:0,fields:[{id:uid(),label:'Property Number',type:'text',required:true,placeholder:'P-10023',options:''},{id:uid(),label:'Owner Name',type:'text',required:true,placeholder:'',options:''},{id:uid(),label:'CNIC',type:'cnic',required:false,placeholder:'',options:''},{id:uid(),label:'Category',type:'dropdown',required:true,placeholder:'',options:'Residential, Commercial, Industrial'},{id:uid(),label:'Photo',type:'photo',required:true,placeholder:'',options:''},{id:uid(),label:'GPS',type:'gps',required:true,placeholder:'',options:''}]},{key:'bill_'+Date.now(),name:'Bill Recovery',icon:'💰',description:'Bill collection',color:'success',isActive:true,order:1,fields:[{id:uid(),label:'Consumer Number',type:'text',required:true,placeholder:'',options:''},{id:uid(),label:'Amount',type:'amount',required:true,placeholder:'',options:''},{id:uid(),label:'Status',type:'dropdown',required:true,placeholder:'',options:'Recovered, Partial, Pending'},{id:uid(),label:'Photo',type:'photo',required:true,placeholder:'',options:''}]}];}
+  function uid(){return 'f_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
+  async function loadSections(force){if(sections.length && !force) return;try{const snap=await db.collection('wasaActivityTypes').orderBy('order').get();if(snap.empty){sections=defaultSections();for(const s of sections)await db.collection('wasaActivityTypes').doc(s.key).set(s);}else sections=snap.docs.map(d=>d.data());}catch(e){sections=[];}}
+  async function renderFormBuilder(force){await loadSections(force);renderSectionsList();if(currentSectionId)renderEditor(currentSectionId);}
+  function renderSectionsList(){const el=document.getElementById('fb-sections-list');document.getElementById('fb-count').textContent=sections.length;if(!sections.length){el.innerHTML=`<div class="empty-state"><div class="em">📭</div><h4>No sections</h4></div>`;return;}el.innerHTML=sections.map(s=>`<div class="fb-section-item ${s.key===currentSectionId?'active':''}" onclick="selectSection('${s.key}')"><div class="ico">${s.icon||'📋'}</div><div class="info"><div class="name">${escapeHtml(s.name)}</div><div class="meta">${(s.fields||[]).length} fields</div></div></div>`).join('');}
+  function selectSection(key){currentSectionId=key;renderSectionsList();renderEditor(key);}
+  function renderEditor(key){const s=sections.find(x=>x.key===key);if(!s)return;document.getElementById('fb-editor-title').textContent=s.icon+' '+s.name;document.getElementById('fb-editor-sub').textContent=s.description||'';document.getElementById('fb-editor-actions').style.display='flex';document.getElementById('fb-toggle-txt').textContent=s.isActive?'Disable':'Enable';const body=document.getElementById('fb-editor-body');if(!(s.fields||[]).length){body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h4 style="font-size:0.8125rem;font-weight:800;">🧩 Fields (0)</h4><button class="btn btn-primary btn-sm" onclick="openFieldModal(-1)"><i class="fa-solid fa-plus"></i> Add Field</button></div><div class="empty-state"><div class="em">🧩</div><h4>No fields</h4></div>`;return;}body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h4 style="font-size:0.8125rem;font-weight:800;">🧩 Fields (${s.fields.length})</h4><button class="btn btn-primary btn-sm" onclick="openFieldModal(-1)"><i class="fa-solid fa-plus"></i> Add Field</button></div>${s.fields.map((f,idx)=>`<div class="fb-field-row"><i class="fa-solid fa-grip-vertical" style="color:var(--g400);"></i><div class="fb-field-info"><div class="fb-field-label">${escapeHtml(f.label)} ${f.required?'<span style="color:var(--d500);">*</span>':''}</div><div class="fb-field-meta"><span class="badge b-gray">${f.type}</span><span class="badge ${f.required?'b-dang':'b-succ'}" style="margin-left:4px;">${f.required?'Required':'Optional'}</span></div></div><button class="btn ${f.required?'btn-warning':'btn-success'} btn-xs" onclick="toggleFieldRequired(${idx})">${f.required?'Make Optional':'Make Required'}</button><button class="btn btn-outline btn-xs" onclick="moveField(${idx},-1)" ${idx===0?'disabled':''}><i class="fa-solid fa-arrow-up"></i></button><button class="btn btn-outline btn-xs" onclick="moveField(${idx},1)" ${idx===s.fields.length-1?'disabled':''}><i class="fa-solid fa-arrow-down"></i></button><button class="btn btn-outline btn-xs" onclick="openFieldModal(${idx})"><i class="fa-solid fa-pen"></i></button><button class="btn btn-danger btn-xs" onclick="deleteField(${idx})"><i class="fa-solid fa-trash"></i></button></div>`).join('')}`;}
+  async function toggleFieldRequired(idx){const s=sections.find(x=>x.key===currentSectionId);if(!s||!s.fields||!s.fields[idx])return;s.fields[idx].required=!s.fields[idx].required;try{await db.collection('wasaActivityTypes').doc(s.key).set(s);toast(s.fields[idx].required?'Now REQUIRED':'Now OPTIONAL','success');renderEditor(s.key);}catch(e){toast('Fail','error');}}
+  function openSectionModal(id=null){editingSectionId=id;document.getElementById('sm-title').textContent=id?'Edit':'Add';if(id){const s=sections.find(x=>x.key===id);document.getElementById('sm-name').value=s.name;document.getElementById('sm-icon').value=s.icon;document.getElementById('sm-desc').value=s.description;document.getElementById('sm-color').value=s.color;}else{document.getElementById('sm-name').value='';document.getElementById('sm-icon').value='📋';document.getElementById('sm-desc').value='';document.getElementById('sm-color').value='primary';}openModal('section-modal');}
+  function editCurrentSection(){if(currentSectionId)openSectionModal(currentSectionId);}
+  async function saveSection(){const name=document.getElementById('sm-name').value.trim();if(!name)return toast('Required','warning');const icon=document.getElementById('sm-icon').value.trim()||'📋';const desc=document.getElementById('sm-desc').value.trim();const color=document.getElementById('sm-color').value;if(editingSectionId){const s=sections.find(x=>x.key===editingSectionId);s.name=name;s.icon=icon;s.description=desc;s.color=color;try{await db.collection('wasaActivityTypes').doc(s.key).set(s);toast('Updated','success');}catch(e){toast('Fail','error');}}else{const ns={key:'sec_'+Date.now(),name,icon,description:desc,color,isActive:true,order:sections.length,fields:[]};sections.push(ns);currentSectionId=ns.key;try{await db.collection('wasaActivityTypes').doc(ns.key).set(ns);toast('Added','success');}catch(e){toast('Fail','error');}}closeModal('section-modal');renderSectionsList();if(currentSectionId)renderEditor(currentSectionId);}
+  async function toggleCurrentSection(){const s=sections.find(x=>x.key===currentSectionId);if(!s)return;s.isActive=!s.isActive;try{await db.collection('wasaActivityTypes').doc(s.key).set(s);toast(s.isActive?'Enabled':'Disabled','success');renderSectionsList();renderEditor(s.key);}catch(e){toast('Fail','error');}}
+  async function deleteCurrentSection(){const s=sections.find(x=>x.key===currentSectionId);if(!s||!confirm(`Delete "${s.name}"?`))return;sections=sections.filter(x=>x.key!==currentSectionId);try{await db.collection('wasaActivityTypes').doc(s.key).delete();currentSectionId=null;toast('Deleted','info');renderSectionsList();document.getElementById('fb-editor-actions').style.display='none';document.getElementById('fb-editor-title').textContent='Select a section';document.getElementById('fb-editor-body').innerHTML=`<div class="empty-state"><div class="em">👈</div><h4>No section</h4></div>`;}catch(e){toast('Fail','error');}}
+  function openFieldModal(idx){editingFieldIndex=idx;const s=sections.find(x=>x.key===currentSectionId);if(!s)return;document.getElementById('fm-title').textContent=idx>=0?'Edit':'Add';if(idx>=0){const f=s.fields[idx];document.getElementById('fm-type').value=f.type;document.getElementById('fm-label').value=f.label;document.getElementById('fm-placeholder').value=f.placeholder;document.getElementById('fm-options').value=f.options;document.getElementById('fm-required').checked=!!f.required;}else{document.getElementById('fm-type').value='text';document.getElementById('fm-label').value='';document.getElementById('fm-placeholder').value='';document.getElementById('fm-options').value='';document.getElementById('fm-required').checked=false;}onFieldTypeChange();openModal('field-modal');}
+  function onFieldTypeChange(){const t=document.getElementById('fm-type').value;document.getElementById('fm-opts-row').style.display=(t==='dropdown'||t==='radio'||t==='checkbox')?'block':'none';}
+  async function saveField(){const s=sections.find(x=>x.key===currentSectionId);if(!s)return;const label=document.getElementById('fm-label').value.trim();if(!label)return toast('Required','warning');const type=document.getElementById('fm-type').value;const placeholder=document.getElementById('fm-placeholder').value.trim();const options=document.getElementById('fm-options').value.trim();const required=document.getElementById('fm-required').checked;if(editingFieldIndex>=0)s.fields[editingFieldIndex]={...s.fields[editingFieldIndex],label,type,placeholder,options,required};else s.fields.push({id:uid(),label,type,placeholder,options,required});try{await db.collection('wasaActivityTypes').doc(s.key).set(s);toast('Saved','success');}catch(e){toast('Fail','error');}closeModal('field-modal');renderEditor(s.key);renderSectionsList();}
+  async function deleteField(idx){const s=sections.find(x=>x.key===currentSectionId);if(!s||!confirm('Delete?'))return;s.fields.splice(idx,1);try{await db.collection('wasaActivityTypes').doc(s.key).set(s);toast('Deleted','info');renderEditor(s.key);renderSectionsList();}catch(e){toast('Fail','error');}}
+  async function moveField(idx,dir){const s=sections.find(x=>x.key===currentSectionId);if(!s)return;const ni=idx+dir;if(ni<0||ni>=s.fields.length)return;[s.fields[idx],s.fields[ni]]=[s.fields[ni],s.fields[idx]];try{await db.collection('wasaActivityTypes').doc(s.key).set(s);renderEditor(s.key);}catch(e){}}
+
+  function openModal(id){document.getElementById(id).classList.add('active');}
+  function closeModal(id){document.getElementById(id).classList.remove('active');}
+
+  /* ---------- CONSUMERS (LOAD ONLY ON DEMAND) ---------- */
+  async function reloadConsumers(){
+    if(consumersLoading){toast('Loading in progress...','info');return;}
+    consumersLoading=true;
+    showLoad('Loading consumers from Firebase...');
+    updateCacheBadge('loading','Loading consumers...');
+    try{
+      updateLoad('Fetching...',30);
+      const snap=await db.collection('wasaConsumers').get();
+      const all=[];snap.forEach(d=>all.push({_id:d.id,...d.data()}));
+      consumersCache=all;
+      updateLoad(`✓ ${all.length.toLocaleString()} loaded`,100);
+      updateCacheBadge('ok',`${all.length.toLocaleString()} consumers`);
+      setTimeout(hideLoad,600);
+      toast(`✅ Loaded ${all.length.toLocaleString()} consumers`,'success');
+      renderConsumersResults();
+      renderDashboardCards();
+    }catch(e){hideLoad();updateCacheBadge('error','Load failed');toast('Load: '+e.message,'error');}
+    finally{consumersLoading=false;}
+  }
+
+  let searchDebounce;
+  function onSearchInput(v){currentSearchText=v;clearTimeout(searchDebounce);searchDebounce=setTimeout(renderConsumersResults,300);}
+  function applyAllFilters(data){let res=data;if(activeFilters.length){res=res.filter(r=>activeFilters.every(f=>{const val=String(r[f.column]||'').toLowerCase();if(Array.isArray(f.values)&&f.values.length>0)return f.values.some(fv=>val===String(fv).toLowerCase());if(f.value)return val.includes(String(f.value).toLowerCase());return true;}));}if(currentSearchText&&currentSearchText.length>=2){const q=currentSearchText.toLowerCase();res=res.filter(r=>{for(const k in r){if(k.startsWith('_'))continue;if(r[k]!=null&&String(r[k]).toLowerCase().includes(q))return true;}return false;});}return res;}
+  function renderConsumersResults(){
+    if(!consumersCache){document.getElementById('results-scroll-inner').innerHTML=`<div class="empty-state"><div class="em">📥</div><h4>Consumers not loaded</h4><p>Click <b>Reload Data</b> above.</p></div>`;document.getElementById('result-info').textContent='Click Reload Data';return;}
+    const startTime=performance.now();
+    const results=applyAllFilters(consumersCache);
+    const elapsed=Math.round(performance.now()-startTime);
+    document.getElementById('result-info').innerHTML=(currentSearchText||activeFilters.length)?`<strong>${results.length.toLocaleString()}</strong> results from ${consumersCache.length.toLocaleString()} • ${elapsed}ms ⚡`:`<strong>${consumersCache.length.toLocaleString()}</strong> records available`;
+    renderFilterChips();
+    const container=document.getElementById('results-scroll-inner');
+    if(!results.length){container.innerHTML=`<div class="empty-state"><div class="em">🔍</div><h4>No results</h4></div>`;return;}
+    const allKeys=new Set();results.slice(0,100).forEach(r=>Object.keys(r).forEach(k=>{if(!k.startsWith('_'))allKeys.add(k);}));
+    const managed=getManagedColumns();
+    let displayColumns=managed.filter(c=>allKeys.has(c)||managed.includes(c));
+    Array.from(allKeys).forEach(k=>{if(!displayColumns.includes(k))displayColumns.push(k);});
+    window._lastResults=results;window._lastColumns=displayColumns;
+    const displayRows=results.slice(0,300);
+    container.innerHTML=`<table class="data-tbl"><thead><tr>${displayColumns.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}<th>Action</th></tr></thead><tbody>${displayRows.map((r,idx)=>`<tr>${displayColumns.map(c=>`<td>${escapeHtml(String(r[c]||'-')).slice(0,80)}</td>`).join('')}<td style="white-space:nowrap;"><button class="btn btn-outline btn-xs" onclick="viewRow(${idx})"><i class="fa-solid fa-eye"></i></button> <button class="btn btn-warning btn-xs" onclick="editRow(${idx})"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-info btn-xs" onclick="downloadRowPDF(${idx})"><i class="fa-solid fa-file-pdf"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteRow(${idx})"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table>${results.length>300?`<div style="padding:12px;text-align:center;font-size:0.75rem;color:var(--g500);">Showing 300 of ${results.length.toLocaleString()}</div>`:''}`;
+  }
+  function renderFilterChips(){const box=document.getElementById('filter-chips');const chips=activeFilters.map((f,idx)=>{const disp=Array.isArray(f.values)?(f.values.length>2?`${f.values.length} values`:f.values.join(', ')):f.value;return `<div class="filter-chip active"><strong>${escapeHtml(f.column)}:</strong> ${escapeHtml(disp)} <span class="x" onclick="removeFilter(${idx})">×</span></div>`;}).join('');box.innerHTML=chips+`<div class="filter-chip filter-chip-add" onclick="openFilterPickerModal()"><i class="fa-solid fa-filter"></i> Add Filter</div>`;}
+  function removeFilter(idx){activeFilters.splice(idx,1);renderConsumersResults();}
+  function viewRow(idx){const r=window._lastResults[idx];document.getElementById('dm-title').textContent='Consumer Detail';const rows=Object.keys(r).filter(k=>!k.startsWith('_')).map(k=>`<div class="dup-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(r[k]||'-'))}</span></div>`).join('');document.getElementById('dm-body').innerHTML=`<div class="dup-side">${rows}</div>`;document.getElementById('dm-footer').innerHTML=`<button class="btn btn-info btn-sm" onclick="downloadRowPDF(${idx})"><i class="fa-solid fa-file-pdf"></i> PDF</button> <button class="btn btn-outline btn-sm" onclick="closeModal('detail-modal')">Close</button>`;openModal('detail-modal');}
+  function editRow(idx){const r=window._lastResults[idx];editingRow={collection:'wasaConsumers',id:r._id,data:{...r}};const container=document.getElementById('er-fields-container');container.innerHTML=window._lastColumns.map(c=>`<div class="form-row"><label>${escapeHtml(c)}</label><input type="text" class="input" data-col="${escapeAttr(c)}" value="${escapeAttr(String(r[c]||''))}"></div>`).join('');openModal('edit-row-modal');}
+  async function saveEditedRow(){if(!editingRow)return;const updates={};document.querySelectorAll('#er-fields-container [data-col]').forEach(inp=>{updates[inp.dataset.col]=inp.value;});try{await db.collection(editingRow.collection).doc(editingRow.id).update(updates);toast('Updated','success');closeModal('edit-row-modal');const rec=consumersCache.find(x=>x._id===editingRow.id);if(rec)Object.assign(rec,updates);renderConsumersResults();}catch(e){toast('Fail','error');}}
+  function downloadEditingRowPDF(){if(!editingRow)return;const rec={};document.querySelectorAll('#er-fields-container [data-col]').forEach(inp=>{rec[inp.dataset.col]=inp.value;});generateConsumerPDF(rec);}
+  async function deleteRow(idx){const r=window._lastResults[idx];if(!confirm(`Delete consumer?`))return;try{await db.collection('wasaConsumers').doc(r._id).delete();toast('Deleted','info');consumersCache=consumersCache.filter(x=>x._id!==r._id);renderConsumersResults();}catch(e){toast('Fail','error');}}
+  function downloadRowPDF(idx){generateConsumerPDF(window._lastResults[idx]);}
+  function generateConsumerPDF(record){try{const {jsPDF}=window.jspdf;const doc=new jsPDF();doc.setFillColor(26,86,219);doc.rect(0,0,210,30,'F');doc.setTextColor(255,255,255);doc.setFontSize(18);doc.setFont(undefined,'bold');doc.text(settings.brandTitle||'WASA',105,14,{align:'center'});doc.setFontSize(10);doc.setFont(undefined,'normal');doc.text('Consumer Record',105,22,{align:'center'});doc.setTextColor(60,60,60);doc.setFontSize(9);doc.text('Generated: '+new Date().toLocaleString(),14,40);doc.text('By: '+(me?me.name:'Admin'),195,40,{align:'right'});const rows=Object.keys(record).filter(k=>!k.startsWith('_')&&record[k]!=null&&record[k]!=='').map(k=>[k,String(record[k])]);doc.autoTable({startY:48,head:[['Field','Value']],body:rows,theme:'grid',headStyles:{fillColor:[26,86,219],textColor:255,fontSize:10,fontStyle:'bold'},bodyStyles:{fontSize:9,cellPadding:4},alternateRowStyles:{fillColor:[249,250,251]},columnStyles:{0:{fontStyle:'bold',cellWidth:60,textColor:[55,65,81]}}});doc.save(`Consumer_${record.CONSUMER_NO||Date.now()}.pdf`);toast('PDF downloaded','success');}catch(e){toast('PDF fail','error');}}
+
+  function openFilterPickerModal(){if(!consumersCache){toast('Load consumers first','warning');return;}const allKeys=new Set();consumersCache.slice(0,500).forEach(r=>Object.keys(r).forEach(k=>{if(!k.startsWith('_'))allKeys.add(k);}));getManagedColumns().forEach(m=>allKeys.add(m));const keys=Array.from(allKeys).sort();const sel=document.getElementById('fp-column');sel.innerHTML=keys.map(k=>`<option value="${escapeAttr(k)}">${escapeHtml(k)}</option>`).join('');document.getElementById('fp-text').value='';document.getElementById('fp-search').value='';fpSelected=new Set();fpSwitch('text');openModal('filter-picker-modal');}
+  function fpSwitch(mode){fpMode=mode;document.querySelectorAll('.fp-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));document.getElementById('fp-text-mode').style.display=mode==='text'?'block':'none';document.getElementById('fp-multi-mode').style.display=mode==='multi'?'block':'none';if(mode==='multi')fpRebuild();}
+  function fpRebuild(){if(fpMode!=='multi')return;const col=document.getElementById('fp-column').value;const s=document.getElementById('fp-search').value.toLowerCase();const cnts=new Map();consumersCache.forEach(r=>{const v=r[col];if(v!=null&&v!==''){const st=String(v);cnts.set(st,(cnts.get(st)||0)+1);}});let ent=Array.from(cnts.entries()).sort((a,b)=>b[1]-a[1]);if(s)ent=ent.filter(([v])=>v.toLowerCase().includes(s));ent=ent.slice(0,200);const el=document.getElementById('fp-val-list');if(!ent.length){el.innerHTML=`<div style="padding:20px;text-align:center;font-size:0.75rem;color:var(--g500);">No values</div>`;}else{el.innerHTML=ent.map(([v,c])=>`<label class="filter-val-item"><input type="checkbox" data-val="${escapeAttr(v)}" ${fpSelected.has(v)?'checked':''} onchange="toggleFp(this)"><span class="txt">${escapeHtml(v)}</span><span class="cnt">${c.toLocaleString()}</span></label>`).join('');}updateFpCount();}
+  function toggleFp(cb){if(cb.checked)fpSelected.add(cb.dataset.val);else fpSelected.delete(cb.dataset.val);updateFpCount();}
+  function updateFpCount(){document.getElementById('fp-count').textContent=fpSelected.size+' selected';}
+  function fpSelectAll(){document.querySelectorAll('#fp-val-list input[type="checkbox"]').forEach(cb=>{cb.checked=true;fpSelected.add(cb.dataset.val);});updateFpCount();}
+  function fpClearAll(){fpSelected.clear();document.querySelectorAll('#fp-val-list input[type="checkbox"]').forEach(cb=>cb.checked=false);updateFpCount();}
+  function applyFilter(){const col=document.getElementById('fp-column').value;if(!col)return toast('Choose column','warning');if(fpMode==='text'){const v=document.getElementById('fp-text').value.trim();if(!v)return toast('Enter value','warning');activeFilters.push({column:col,value:v});}else{if(!fpSelected.size)return toast('Select values','warning');activeFilters.push({column:col,values:Array.from(fpSelected)});}closeModal('filter-picker-modal');renderConsumersResults();toast('Filter added','success');}
+
+  function downloadResults(mode){if(!consumersCache)return toast('Load consumers first','warning');let rows=mode==='filtered'?(window._lastResults||applyAllFilters(consumersCache)):consumersCache;if(!rows.length)return toast('No data','warning');const clean=rows.map(r=>{const o={};Object.keys(r).forEach(k=>{if(!k.startsWith('_'))o[k]=r[k];});return o;});const managed=getManagedColumns();const allKeys=new Set();clean.forEach(r=>Object.keys(r).forEach(k=>allKeys.add(k)));let colOrder=managed.filter(c=>allKeys.has(c)||managed.includes(c));Array.from(allKeys).forEach(k=>{if(!colOrder.includes(k))colOrder.push(k);});const ordered=clean.map(r=>{const o={};colOrder.forEach(c=>o[c]=r[c]||'');return o;});const ws=XLSX.utils.json_to_sheet(ordered,{header:colOrder});const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Consumers');XLSX.writeFile(wb,`WASA_Consumers_${mode}_${Date.now()}.xlsx`);toast(`✅ Downloaded ${ordered.length.toLocaleString()}`,'success');}
+
+  function getManagedColumns(){if(settings.consumerColumns&&settings.consumerColumns.length)return[...settings.consumerColumns];if(consumersCache&&consumersCache.length){const set=new Set();consumersCache.slice(0,100).forEach(r=>Object.keys(r).forEach(k=>{if(!k.startsWith('_'))set.add(k);}));return Array.from(set);}return[];}
+  function openColumnMgrModal(){managedColumns=getManagedColumns();renderColList();openModal('col-mgr-modal');}
+  function renderColList(){const el=document.getElementById('col-list');if(!managedColumns.length){el.innerHTML=`<div class="empty-state"><div class="em">📋</div><h4>No columns</h4></div>`;return;}el.innerHTML=managedColumns.map((c,i)=>`<div class="col-row"><i class="fa-solid fa-grip-vertical" style="color:var(--g400);"></i><div class="col-name">${escapeHtml(c)}</div><button class="btn btn-outline btn-xs" onclick="moveCol(${i},-1)" ${i===0?'disabled':''}><i class="fa-solid fa-arrow-up"></i></button><button class="btn btn-outline btn-xs" onclick="moveCol(${i},1)" ${i===managedColumns.length-1?'disabled':''}><i class="fa-solid fa-arrow-down"></i></button><button class="btn btn-danger btn-xs" onclick="delCol(${i})"><i class="fa-solid fa-trash"></i></button></div>`).join('');}
+  function moveCol(i,dir){const ni=i+dir;if(ni<0||ni>=managedColumns.length)return;[managedColumns[i],managedColumns[ni]]=[managedColumns[ni],managedColumns[i]];renderColList();}
+  function delCol(i){if(!confirm(`Remove "${managedColumns[i]}"?`))return;managedColumns.splice(i,1);renderColList();}
+  function addNewColumn(){const n=document.getElementById('new-col-name').value.trim().toUpperCase();if(!n)return toast('Enter name','warning');if(managedColumns.includes(n))return toast('Exists','warning');managedColumns.push(n);document.getElementById('new-col-name').value='';renderColList();}
+  async function saveColumnOrder(){try{await db.collection('wasaSettings').doc('main').set({consumerColumns:managedColumns},{merge:true});settings.consumerColumns=managedColumns;toast('Saved','success');closeModal('col-mgr-modal');renderConsumersResults();}catch(e){toast('Fail','error');}}
+
+  function openAddConsumerModal(){let cols=getManagedColumns();if(!cols.length)cols=['CONSUMER_NO','CONSUMER_NAME','FATHER_NAME','CONTACT_NO','CNIC','ADDRESS','SUBCATEGORY'];document.getElementById('ac-fields-container').innerHTML=cols.map(c=>`<div class="form-row"><label>${escapeHtml(c)}</label><input type="text" class="input" data-col="${escapeAttr(c)}"></div>`).join('');openModal('add-consumer-modal');}
+  async function saveNewConsumer(){const rec={};document.querySelectorAll('#ac-fields-container [data-col]').forEach(inp=>{rec[inp.dataset.col]=inp.value.trim();});if(!Object.values(rec).some(v=>v))return toast('Fill at least one','warning');rec._createdAt=firebase.firestore.FieldValue.serverTimestamp();rec._createdBy=me?me.name:'Admin';try{const ref=await db.collection('wasaConsumers').add(rec);toast('Added','success');closeModal('add-consumer-modal');if(consumersCache)consumersCache.push({_id:ref.id,...rec});renderConsumersResults();}catch(e){toast('Fail','error');}}
+
+  /* ---------- PENDING / OFFICERS / ACTIVITIES ---------- */
+  async function loadPending(){try{const snap=await db.collection('wasaUsers').where('status','==','pending').get();const tb=document.getElementById('pending-tbody');if(snap.empty){tb.innerHTML=`<tr><td colspan="5" class="empty-state"><div class="em">✅</div><h4>No pending</h4></td></tr>`;return;}tb.innerHTML=snap.docs.map(d=>{const u=d.data();return `<tr><td><strong>${escapeHtml(u.name||'-')}</strong></td><td>${escapeHtml(u.phone||'-')}</td><td>${escapeHtml(u.cnic||'-')}</td><td><span class="badge b-info">${escapeHtml(u.designation||'-')}</span></td><td style="text-align:right;"><button class="btn btn-success btn-sm" onclick="approveReq('${d.id}','${escapeAttr(u.name)}')">✓ Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectReq('${d.id}')">✕</button></td></tr>`;}).join('');}catch(e){toast('Fail','error');}}
+  async function approveReq(id,name){try{await db.collection('wasaUsers').doc(id).update({status:'active'});toast(`${name} approved`,'success');loadPending();}catch(e){toast('Fail','error');}}
+  async function rejectReq(id){if(!confirm('Reject?'))return;try{await db.collection('wasaUsers').doc(id).delete();toast('Rejected','info');loadPending();}catch(e){toast('Fail','error');}}
+  async function loadOfficers(){try{const snap=await db.collection('wasaUsers').get();const tb=document.getElementById('officers-tbody');const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>(u.role||'').toLowerCase()!=='superadmin');if(!rows.length){tb.innerHTML=`<tr><td colspan="6" class="empty-state"><div class="em">👥</div><h4>No officers</h4></td></tr>`;return;}tb.innerHTML=rows.map(u=>{const bc=u.status==='active'?'b-succ':u.status==='pending'?'b-warn':'b-dang';const av=u.photoUrl?`<img src="${u.photoUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`:`<div style="width:36px;height:36px;border-radius:50%;background:var(--p500);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;">${(u.name||'?').charAt(0).toUpperCase()}</div>`;return `<tr><td>${av}</td><td><strong>${escapeHtml(u.name||'-')}</strong></td><td>${escapeHtml(u.phone||'-')}</td><td><span class="badge b-info">${escapeHtml(u.designation||u.role||'Officer')}</span></td><td><span class="badge ${bc}">${escapeHtml(u.status||'-')}</span></td><td style="text-align:right;white-space:nowrap;"><button class="btn btn-outline btn-xs" onclick="openOfficerEditModal('${u.id}')"><i class="fa-solid fa-pen"></i> Edit</button> <button class="btn btn-danger btn-xs" onclick="deleteOfficer('${u.id}','${escapeAttr(u.name)}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;}).join('');}catch(e){toast('Fail','error');}}
+  async function viewPassword(id,name){try{const d=await db.collection('wasaUsers').doc(id).get();if(!d.exists)return toast('Not found','error');const u=d.data();alert(`👤 ${name}\n\n📱 Phone: ${u.phone}\n🔑 Password: ${u.passHash||'N/A'}`);}catch(e){toast('Fail','error');}}
+  function openOfficerEditModal(id){editingOfficerId=id;officerPhotoBlob=null;document.getElementById('om-title').textContent=id?'Edit':'Add';if(id){db.collection('wasaUsers').doc(id).get().then(d=>{if(!d.exists)return;const u=d.data();document.getElementById('om-name').value=u.name||'';document.getElementById('om-phone').value=u.phone||'';document.getElementById('om-cnic').value=u.cnic||'';document.getElementById('om-desig').value=u.designation||'';document.getElementById('om-role').value=u.role||'officer';document.getElementById('om-status').value=u.status||'active';document.getElementById('om-pass').value='';const av=document.getElementById('om-avatar');if(u.photoUrl)av.outerHTML=`<img id="om-avatar" src="${u.photoUrl}" class="avatar-lg" style="margin:0 auto 8px;">`;else av.outerHTML=`<div id="om-avatar" class="avatar-lg" style="margin:0 auto 8px;">${(u.name||'?').charAt(0).toUpperCase()}</div>`;});}else{document.getElementById('om-name').value='';document.getElementById('om-phone').value='';document.getElementById('om-cnic').value='';document.getElementById('om-desig').value='Field Officer';document.getElementById('om-role').value='officer';document.getElementById('om-status').value='active';document.getElementById('om-pass').value='';document.getElementById('om-avatar').outerHTML=`<div id="om-avatar" class="avatar-lg" style="margin:0 auto 8px;">?</div>`;}openModal('officer-modal');}
+  function onOfficerPhotoSelect(input){if(!input.files||!input.files[0])return;officerPhotoBlob=input.files[0];const reader=new FileReader();reader.onload=e=>{document.getElementById('om-avatar').outerHTML=`<img id="om-avatar" src="${e.target.result}" class="avatar-lg" style="margin:0 auto 8px;">`;};reader.readAsDataURL(input.files[0]);}
+  function genRandomPass(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';let p='';for(let i=0;i<8;i++)p+=chars.charAt(Math.floor(Math.random()*chars.length));document.getElementById('om-pass').value=p;toast('Generated','info');}
+  async function saveOfficerEdit(){const name=document.getElementById('om-name').value.trim();const phone=document.getElementById('om-phone').value.trim();if(!name||!phone)return toast('Required','warning');if(phone.length!==11)return toast('Phone 11 digits','warning');const cnic=document.getElementById('om-cnic').value.trim();const desig=document.getElementById('om-desig').value.trim();const role=document.getElementById('om-role').value;const status=document.getElementById('om-status').value;const pass=document.getElementById('om-pass').value.trim();let photoUrl=null;if(officerPhotoBlob){try{const fd=new FormData();fd.append('file',officerPhotoBlob);fd.append('upload_preset',cloudinaryConfig.uploadPreset);const res=await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,{method:'POST',body:fd});photoUrl=(await res.json()).secure_url;}catch(e){toast('Photo failed','warning');}}try{if(editingOfficerId){const update={name,phone,cnic,designation:desig,role,status};if(pass)update.passHash=pass;if(photoUrl)update.photoUrl=photoUrl;await db.collection('wasaUsers').doc(editingOfficerId).update(update);toast('Updated','success');}else{if(!pass||pass.length<6)return toast('Password required','warning');const exists=await db.collection('wasaUsers').where('phone','==',phone).limit(1).get();if(!exists.empty)return toast('Phone exists','error');const doc={name,phone,cnic,designation:desig,role,status,passwordHash:'__legacy_disabled__',createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:me?me.name:'Admin'};if(photoUrl)doc.photoUrl=photoUrl;await db.collection('wasaUsers').add(doc);toast('Created','success');}closeModal('officer-modal');loadOfficers();}catch(e){toast('Fail: '+e.message,'error');}}
+  async function deleteOfficer(id,name){if(!confirm(`Delete "${name}"?`))return;try{await db.collection('wasaUsers').doc(id).delete();toast('Deleted','info');loadOfficers();}catch(e){toast('Fail','error');}}
+  function exportOfficersXL(){db.collection('wasaUsers').get().then(snap=>{const rows=snap.docs.map(d=>d.data()).filter(u=>(u.role||'').toLowerCase()!=='superadmin').map(u=>({Name:u.name||'',Phone:u.phone||'',CNIC:u.cnic||'',Role:u.role||'',Designation:u.designation||'',Status:u.status||'',}));const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Officers');XLSX.writeFile(wb,'WASA_Officers.xlsx');toast('Downloaded','success');});}
+
+  async function loadActivities(){try{const time=document.getElementById('act-filter-time').value;const snap=await db.collection('wasaActivities').orderBy('timestamp','desc').limit(1000).get();let rows=snap.docs.map(d=>({id:d.id,...d.data()}));const now=Date.now();if(time==='today'){const t0=new Date();t0.setHours(0,0,0,0);rows=rows.filter(r=>r.timestamp&&r.timestamp.seconds*1000>=t0.getTime());}else if(time==='week')rows=rows.filter(r=>r.timestamp&&(now-r.timestamp.seconds*1000)<=7*86400000);else if(time==='month')rows=rows.filter(r=>r.timestamp&&(now-r.timestamp.seconds*1000)<=30*86400000);const body=document.getElementById('activities-body');if(!rows.length){body.innerHTML=`<div class="empty-state"><div class="em">📭</div><h4>No activities</h4></div>`;return;}const allKeys=new Set(['activityType','officerName','amount']);rows.forEach(r=>r.values&&Object.keys(r.values).forEach(k=>allKeys.add(k)));const keys=Array.from(allKeys);body.innerHTML=`<div style="overflow:auto;max-height:600px;border:1px solid var(--g200);border-radius:var(--r-md);"><table class="data-tbl"><thead><tr><th>Time</th>${keys.map(k=>`<th>${escapeHtml(k)}</th>`).join('')}<th>Photo</th><th>Action</th></tr></thead><tbody>${rows.map(r=>{const v=r.values||{};return `<tr><td>${r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleString():'-'}</td>${keys.map(k=>`<td>${escapeHtml(String(r[k]||v[k]||'-')).slice(0,60)}</td>`).join('')}<td>${r.photoUrl?`<a href="${r.photoUrl}" target="_blank"><img src="${r.photoUrl}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;"></a>`:'-'}</td><td><button class="btn btn-danger btn-xs" onclick="deleteActivity('${r.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;}).join('')}</tbody></table></div>`;window._lastActivities=rows;}catch(e){toast('Fail','error');}}
+  async function deleteActivity(id){if(!confirm('Delete?'))return;try{await db.collection('wasaActivities').doc(id).delete();toast('Deleted','info');loadActivities();}catch(e){toast('Fail','error');}}
+  function exportActivitiesXL(){if(!window._lastActivities||!window._lastActivities.length)return toast('No data','warning');const rows=window._lastActivities.map(r=>{const o={Time:r.timestamp?new Date(r.timestamp.seconds*1000).toLocaleString():'',Officer:r.officerName,Phone:r.officerPhone,Type:r.activityType,Amount:r.amount||0,PhotoURL:r.photoUrl||''};if(r.values)Object.keys(r.values).forEach(k=>o[k]=r.values[k]);return o;});const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Activities');XLSX.writeFile(wb,'WASA_Activities.xlsx');toast('Downloaded','success');}
+
+  /* ---------- BULK UPLOAD ---------- */
+  function onUploadFile(input){if(!input.files||!input.files[0])return;const file=input.files[0];const reader=new FileReader();reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{defval:''});if(!data.length)return toast('Empty','warning');uploadedRows=data;uploadedHeaders=Object.keys(data[0]);renderUploadPreview();}catch(err){toast('Parse: '+err.message,'error');}};reader.readAsBinaryString(file);}
+  function renderUploadPreview(){document.getElementById('upl-preview').style.display='block';document.getElementById('upl-info').innerHTML=`📊 <strong>${uploadedRows.length.toLocaleString()}</strong> rows • <strong>${uploadedHeaders.length}</strong> columns`;const p=uploadedRows.slice(0,10);document.getElementById('upl-preview-table').innerHTML=`<table class="data-tbl"><thead><tr>${uploadedHeaders.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${p.map(r=>`<tr>${uploadedHeaders.map(h=>`<td>${escapeHtml(String(r[h]||'-'))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;}
+  async function startBulkUpload(){if(!uploadedRows.length)return toast('No data','warning');const target=document.getElementById('upl-target').value;const dupCol=document.getElementById('upl-dup-col').value.trim();if(!dupCol)return toast('Specify column','warning');if(!uploadedHeaders.includes(dupCol))return toast('"'+dupCol+'" not in file','warning');const btn=document.getElementById('upl-start-btn');btn.disabled=true;document.getElementById('upl-progress-wrap').style.display='block';const pText=document.getElementById('upl-progress-text');const pBar=document.getElementById('upl-progress');try{pText.textContent='Loading existing...';pBar.style.width='5%';const existSnap=await db.collection(target).get();const existingKeys=new Set();existSnap.forEach(d=>{const v=d.data()[dupCol];if(v!=null)existingKeys.add(String(v).trim().toLowerCase());});pText.textContent='Found '+existSnap.size.toLocaleString()+' existing';pBar.style.width='10%';const CHUNK=400;let uploaded=0,dup=0,failed=0;const dupList=[];const total=uploadedRows.length;for(let i=0;i<total;i+=CHUNK){const slice=uploadedRows.slice(i,i+CHUNK);const batch=db.batch();let batchCount=0;for(const row of slice){const key=String(row[dupCol]||'').trim().toLowerCase();if(key&&existingKeys.has(key)){dup++;if(dupList.length<1000)dupList.push({column:dupCol,key,data:row,source:'bulk_upload',createdAt:firebase.firestore.FieldValue.serverTimestamp()});continue;}if(key)existingKeys.add(key);const ref=db.collection(target).doc();batch.set(ref,{...row,_uploadedAt:firebase.firestore.FieldValue.serverTimestamp(),_uploadedBy:me?me.name:'Admin'});batchCount++;}if(batchCount>0){try{await batch.commit();uploaded+=batchCount;}catch(batchErr){failed+=batchCount;const msg=(batchErr&&batchErr.message)?batchErr.message:String(batchErr);if(msg.toLowerCase().includes('quota')||msg.toLowerCase().includes('resource-exhausted')){toast('❌ Quota limit!','error');pText.textContent='QUOTA EXCEEDED. Uploaded: '+uploaded.toLocaleString();btn.disabled=false;return;}toast('Batch: '+msg,'error');}}const done=Math.min(i+CHUNK,total);const pct=Math.round((done/total)*100);pBar.style.width=pct+'%';pText.textContent=`${pct}% • ${done.toLocaleString()}/${total.toLocaleString()} • Up: ${uploaded.toLocaleString()} • Dup: ${dup.toLocaleString()}`;}if(dupList.length>0){for(let i=0;i<dupList.length;i+=400){const dupBatch=db.batch();dupList.slice(i,i+400).forEach(d=>{dupBatch.set(db.collection('wasaDuplicates').doc(),d);});try{await dupBatch.commit();}catch(e){}}}pBar.style.width='100%';pText.textContent=`DONE • Up: ${uploaded.toLocaleString()} • Dup: ${dup.toLocaleString()}`;toast(`✅ ${uploaded.toLocaleString()} new`,'success');consumersCache=null;}catch(e){toast('Upload: '+e.message,'error');}finally{btn.disabled=false;}}
+
+  /* ---------- DUPLICATES ---------- */
+  async function loadDuplicates(){try{const snap=await db.collection('wasaDuplicates').limit(100).get();const body=document.getElementById('dup-body');if(snap.empty){body.innerHTML=`<div class="empty-state"><div class="em">✅</div><h4>No duplicates</h4></div>`;return;}const dups=snap.docs.map(d=>({id:d.id,...d.data()}));body.innerHTML=`<p style="font-size:0.8125rem;margin-bottom:16px;">Found <strong>${dups.length}</strong> duplicates.</p>`+dups.map(d=>{const keys=Object.keys(d.data||{}).slice(0,8);return `<div class="card" style="margin-bottom:12px;"><div class="card-hd" style="padding:12px 16px;"><div><h3 style="font-size:0.8125rem;">🔁 <code>${escapeHtml(d.column)}</code> = <strong>${escapeHtml(d.key)}</strong></h3></div></div><div class="card-bd"><div class="dup-side">${keys.map(k=>`<div class="dup-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(d.data[k]||'-'))}</span></div>`).join('')}</div><div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-success btn-sm" onclick="dupSave('${d.id}')"><i class="fa-solid fa-plus"></i> Save</button><button class="btn btn-danger btn-sm" onclick="dupDelete('${d.id}')"><i class="fa-solid fa-trash"></i> Delete</button></div></div></div>`;}).join('');}catch(e){toast('Fail','error');}}
+  async function dupSave(id){try{const d=(await db.collection('wasaDuplicates').doc(id).get()).data();await db.collection('wasaConsumers').add({...d.data,_fromDuplicate:true});await db.collection('wasaDuplicates').doc(id).delete();toast('Saved','success');consumersCache=null;loadDuplicates();}catch(e){toast('Fail','error');}}
+  async function dupDelete(id){if(!confirm('Delete?'))return;try{await db.collection('wasaDuplicates').doc(id).delete();toast('Deleted','info');loadDuplicates();}catch(e){toast('Fail','error');}}
+
+  /* ---------- CORRECTIONS ---------- */
+  async function loadCorrections(){try{const snap=await db.collection('wasaCorrectionRequests').where('status','==','pending').get();const body=document.getElementById('corr-body');if(snap.empty){body.innerHTML=`<div class="empty-state"><div class="em">📭</div><h4>No pending corrections</h4></div>`;return;}body.innerHTML=snap.docs.map(d=>{const c=d.data();const chg=c.changes||{};const fieldsHtml=Object.keys(chg).map(k=>`<tr><td style="font-weight:700;color:var(--g700);padding:8px 6px;border-bottom:1px solid var(--g100);">${escapeHtml(k)}</td><td style="color:var(--d600);text-decoration:line-through;padding:8px 6px;border-bottom:1px solid var(--g100);">${escapeHtml(String(chg[k].old||'-'))}</td><td style="padding:8px 6px;border-bottom:1px solid var(--g100);"><input type="text" class="input" style="padding:6px 10px;font-size:0.8125rem;" data-corr-id="${d.id}" data-field="${escapeAttr(k)}" value="${escapeAttr(String(chg[k].new||''))}"></td></tr>`).join('');return `<div class="card" style="margin-bottom:16px;"><div class="card-hd" style="padding:12px 16px;align-items:flex-start;"><div style="flex:1;"><h3 style="font-size:0.875rem;font-weight:800;">✏️ Correction Request</h3><p style="font-size:0.75rem;color:var(--g500);margin-top:4px;">${c.createdAt?new Date(c.createdAt.seconds*1000).toLocaleString():''}</p></div><div style="text-align:right;"><div style="font-size:0.8125rem;font-weight:800;color:var(--p700);">👤 ${escapeHtml(c.officerName||'Unknown')}</div><div style="font-size:0.75rem;color:var(--g500);margin-top:2px;">📱 ${escapeHtml(c.officerPhone||'-')}</div><button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="viewCorrOfficer('${escapeAttr(c.officerPhone||'')}','${escapeAttr(c.officerName||'')}')"><i class="fa-solid fa-id-card"></i> View Officer</button></div></div><div class="card-bd"><p style="font-size:0.8125rem;margin-bottom:12px;"><strong>Reason:</strong> ${escapeHtml(c.reason||'-')}</p><div style="overflow-x:auto;border:1px solid var(--g200);border-radius:var(--r-md);margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;font-size:0.8125rem;"><thead><tr style="background:var(--g50);"><th style="text-align:left;padding:10px 8px;font-size:0.6875rem;text-transform:uppercase;color:var(--g500);">Field</th><th style="text-align:left;padding:10px 8px;font-size:0.6875rem;text-transform:uppercase;color:var(--g500);">Current</th><th style="text-align:left;padding:10px 8px;font-size:0.6875rem;text-transform:uppercase;color:var(--g500);">Edit before Approve</th></tr></thead><tbody>${fieldsHtml}</tbody></table></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-success btn-sm" onclick="approveCorrEdited('${d.id}')"><i class="fa-solid fa-check"></i> Approve (with edits)</button><button class="btn btn-danger btn-sm" onclick="rejectCorr('${d.id}')"><i class="fa-solid fa-xmark"></i> Reject</button></div></div></div>`;}).join('');}catch(e){toast('Fail','error');}}
+  async function approveCorrEdited(id){try{const cdoc=await db.collection('wasaCorrectionRequests').doc(id).get();if(!cdoc.exists)return toast('Not found','error');const c=cdoc.data();const inputs=document.querySelectorAll('input[data-corr-id="'+id+'"]');const update={};const finalChanges={};inputs.forEach(inp=>{const field=inp.dataset.field;const newVal=inp.value.trim();const oldVal=(c.changes&&c.changes[field])?c.changes[field].old:'';update[field]=newVal;finalChanges[field]={old:oldVal,new:newVal,adminEdited:true};});if(!Object.keys(update).length)return toast('No fields','warning');await db.collection(c.targetCollection).doc(c.targetId).update(update);await db.collection('wasaCorrectionRequests').doc(id).update({status:'approved',changes:finalChanges,approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:me?me.name:'Admin'});toast('Applied','success');if(consumersCache&&c.targetCollection==='wasaConsumers'){const rec=consumersCache.find(x=>x._id===c.targetId);if(rec)Object.assign(rec,update);}loadCorrections();}catch(e){toast('Fail','error');}}
+  async function rejectCorr(id){if(!confirm('Reject?'))return;try{await db.collection('wasaCorrectionRequests').doc(id).update({status:'rejected'});toast('Rejected','info');loadCorrections();}catch(e){toast('Fail','error');}}
+  async function viewCorrOfficer(phone,nameHint){try{if(!phone)return toast('No phone','warning');const snap=await db.collection('wasaUsers').where('phone','==',phone).limit(1).get();let html='';if(snap.empty){html=`<div class="dup-side"><div class="dup-row"><span class="k">Name</span><span class="v">${escapeHtml(nameHint||'-')}</span></div><div class="dup-row"><span class="k">Phone</span><span class="v">${escapeHtml(phone)}</span></div><div class="dup-row"><span class="k">Status</span><span class="v">Not found</span></div></div>`;}else{const u=snap.docs[0].data();const photo=u.photoUrl?`<div style="text-align:center;margin-bottom:14px;"><img src="${u.photoUrl}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--p100);"></div>`:`<div style="text-align:center;margin-bottom:14px;"><div style="width:72px;height:72px;border-radius:50%;background:var(--p500);color:white;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;">${(u.name||'?').charAt(0).toUpperCase()}</div></div>`;html=photo+`<div class="dup-side"><div class="dup-row"><span class="k">Name</span><span class="v">${escapeHtml(u.name||'-')}</span></div><div class="dup-row"><span class="k">Phone</span><span class="v">${escapeHtml(u.phone||'-')}</span></div><div class="dup-row"><span class="k">CNIC</span><span class="v">${escapeHtml(u.cnic||'-')}</span></div><div class="dup-row"><span class="k">Designation</span><span class="v">${escapeHtml(u.designation||'-')}</span></div><div class="dup-row"><span class="k">Role</span><span class="v">${escapeHtml(u.role||'-')}</span></div><div class="dup-row"><span class="k">Status</span><span class="v">${escapeHtml(u.status||'-')}</span></div></div>`;}document.getElementById('dm-title').textContent='Officer Details';document.getElementById('dm-body').innerHTML=html;document.getElementById('dm-footer').innerHTML=`<button class="btn btn-outline btn-sm" onclick="closeModal('detail-modal')">Close</button>`;openModal('detail-modal');}catch(e){toast('Fail','error');}}
+
+  function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function escapeAttr(s){return String(s||'').replace(/["'\\]/g,'');}
+
+  // Init
+  window.addEventListener('DOMContentLoaded',loadSettings);
+  </script>
+
+<script>
+/* ==============================================================
+   WASA KASUR v2.8.1.0 — SECURITY / PROJECT ALIGNMENT PATCH
+   This patch is intentionally kept in the same single HTML file.
+   It replaces unsafe legacy behaviour without changing the UI style.
+   ============================================================= */
+(function(){
+  'use strict';
+
+  const HASHED_SUPER = '58557a1140502a0aad5049959f644447243d585ea50cff9daea3d6c3085e9cc3';
+  const HASHED_DEV   = 'b71a2e9ab6983de6d56a6074b44a7ba1980f41eddf239692086070007773c23a';
+  const SUPER_PHONE_SECURE = '03015777523';
+  const SYSTEM_VERSION = '2.8.1.0';
+  const CONSUMER_COLLECTION = 'wasaConsumers';
+  const CORRECTION_COLLECTION = 'wasaCorrectionRequests';
+  const AUDIT_COLLECTION = 'wasaAuditLog';
+  const SESSION_KEY = 'wasa_admin_session_v2810';
+
+  async function sha256(value){
+    const data = new TextEncoder().encode(String(value));
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function normalizePhone(v){return String(v||'').replace(/\D/g,'').slice(0,11);}
+  function normalizeCNIC(v){return String(v||'').replace(/\D/g,'').slice(0,13);}
+  function canWrite(){return !!me && ['admin','superadmin'].includes(String(me.role||'').toLowerCase());}
+  function canSuper(){return !!me && String(me.role||'').toLowerCase()==='superadmin';}
+  function canManageForms(){return canWrite() || canSuper();}
+  function canReports(){return !!me && ['admin','manager','superadmin'].includes(String(me.role||'').toLowerCase());}
+  async function audit(action,collection='',recordId='',details={}){
+    try{
+      await db.collection(AUDIT_COLLECTION).add({
+        action, collection, recordId,
+        actorId:me&&me.id||'', actorName:me&&me.name||'', actorPhone:me&&me.phone||'', actorRole:me&&me.role||'',
+        details, timestamp:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }catch(e){console.warn('Audit write failed',e);}
+  }
+  function safeTime(ts){
+    if(!ts)return '-';
+    if(ts.toDate)return ts.toDate().toLocaleString();
+    if(ts.seconds)return new Date(ts.seconds*1000).toLocaleString();
+    const d=new Date(ts);return isNaN(d)?'-':d.toLocaleString();
+  }
+  function formatPhone(v){const p=normalizePhone(v);return p.length===11?p.slice(0,4)+'-'+p.slice(4):p;}
+  function formatCNIC(v){const c=normalizeCNIC(v);return c.length===13?c.slice(0,5)+'-'+c.slice(5,12)+'-'+c.slice(12):c;}
+  function roleLabel(r){r=String(r||'').toLowerCase();return r==='superadmin'?'Super Admin':r==='admin'?'Admin':r==='manager'?'Management':r==='officer'?'Field Officer':r||'Unknown';}
+
+  // Replace the old custom password login with hashed verification + legacy migration.
+  window.doLogin = async function(e){
+    if(e)e.preventDefault();
+    const phone=normalizePhone(document.getElementById('l-phone').value);
+    const pass=document.getElementById('l-pass').value;
+    const btn=document.getElementById('l-btn');
+    if(phone.length!==11 || !pass){toast('Phone 11 digits aur password required hai','warning');return;}
+    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+    try{
+      const ph=await sha256(pass);
+      if(phone===SUPER_PHONE_SECURE && ph===HASHED_SUPER){
+        me={id:'__super__',name:'System Owner',phone,role:'superadmin',designation:'Super Admin'};
+        sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:me.id,name:me.name,phone:me.phone,role:me.role,designation:me.designation}));
+        await audit('login','wasaUsers','__super__',{method:'superadmin'}); enterApp(); return;
+      }
+      const snap=await db.collection('wasaUsers').where('phone','==',phone).limit(10).get();
+      let found=null, foundRef=null, legacy=false;
+      snap.forEach(d=>{
+        const u=d.data();
+        if(found)return;
+        if(u.passwordHash && u.passwordHash===ph){found=u;foundRef=d;}
+        else if(u.passHash && u.passHash===pass){found=u;foundRef=d;legacy=true;}
+      });
+      if(!found){toast('Invalid credentials','error');return;}
+      const role=String(found.role||'').toLowerCase();
+      if(role==='superadmin'){toast('Super Admin sirf secret account se login karta hai','error');return;}
+      if(!['admin','manager'].includes(role)){toast('Admin/Management account required','error');return;}
+      if(String(found.status||'').toLowerCase()!=='active'){toast('Account active nahi hai','error');return;}
+      me={id:foundRef.id,...found,phone};
+      delete me.passHash;
+      if(legacy){
+        await foundRef.ref.update({passwordHash:ph,passHash:firebase.firestore.FieldValue.delete(),passwordUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        await audit('legacy_password_migrated','wasaUsers',foundRef.id,{});
+      }
+      sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:me.id,name:me.name,phone:me.phone,role:me.role,designation:me.designation}));
+      await audit('login','wasaUsers',foundRef.id,{method:'password'}); enterApp();
+    }catch(err){console.error(err);toast('Login error: '+err.message,'error');}
+    finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Sign In';}
+  };
+
+  async function firstAdminSetup(){
+    const phone=normalizePhone(prompt('Admin phone (11 digits):')||'');
+    if(phone.length!==11)return toast('Valid 11-digit phone zaroori hai','warning');
+    const name=(prompt('Admin name:')||'').trim(); if(!name)return toast('Name required','warning');
+    const pass=prompt('New Admin password (minimum 10 characters):')||''; if(pass.length<10)return toast('Password minimum 10 characters rakhein','warning');
+    const confirmPass=prompt('Password dobara enter karein:')||''; if(pass!==confirmPass)return toast('Passwords match nahi karte','error');
+    const existing=await db.collection('wasaUsers').where('role','==','admin').limit(1).get();
+    if(!existing.empty)return toast('Admin account already exists','warning');
+    const passwordHash=await sha256(pass);
+    const ref=await db.collection('wasaUsers').add({name,phone,passwordHash,role:'admin',designation:'Administrator',status:'active',createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:'initial-setup'});
+    await db.collection(AUDIT_COLLECTION).add({action:'initial_admin_created',collection:'wasaUsers',recordId:ref.id,actorName:name,actorPhone:phone,actorRole:'admin',timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+    toast('✅ Initial Admin create ho gaya. Ab login karein.','success');
+  }
+  window.firstAdminSetup=firstAdminSetup;
+
+  // Show first-time setup only if no admin exists. No password is hard-coded here.
+  async function ensureSetupButton(){
+    const form=document.querySelector('#login-view form'); if(!form || document.getElementById('first-admin-btn'))return;
+    try{
+      const snap=await db.collection('wasaUsers').where('role','==','admin').limit(1).get();
+      if(snap.empty){
+        const b=document.createElement('button');b.id='first-admin-btn';b.type='button';b.className='btn btn-outline btn-full';b.style.marginTop='10px';b.textContent='🔐 First-time Admin Setup';b.onclick=firstAdminSetup;form.appendChild(b);
+      }
+    }catch(e){console.warn('Setup check failed',e);}
+  }
+
+  // Seven taps on the footer unlock the developer modules. Password is hashed in source.
+  let tapCount=0,tapTimer=null;
+  function attachDeveloperUnlock(){
+    const foot=document.querySelector('.sb-version'); if(!foot || foot.dataset.unlockAttached)return;
+    foot.dataset.unlockAttached='1';
+    foot.addEventListener('click',async()=>{
+      tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>tapCount=0,1800);
+      if(tapCount===7){tapCount=0;const pass=prompt('Developer password:')||'';if((await sha256(pass))===HASHED_DEV){unlockDeveloperModules();toast('🔓 Developer settings unlocked','success');}else toast('Invalid developer password','error');}
+    });
+    const loginFoot=document.querySelector('.login-footer'); if(loginFoot){loginFoot.style.cursor='pointer';loginFoot.title='Developer access: 7 taps';}
+  }
+  function unlockDeveloperModules(){
+    const link=document.getElementById('link-branding'); if(link)link.style.display='flex';
+    if(document.getElementById('dev-modules-link'))return;
+    const nav=document.querySelector('.sb-nav');
+    const label=document.createElement('div');label.className='sb-label';label.id='dev-modules-label';label.textContent='Developer';nav.appendChild(label);
+    [['pagebuilder','🧩 Page / Module Builder'],['ai-engine','🤖 AI Customization Engine'],['call-audit','🎙️ Call Recording Audit Logs']].forEach(([id,text])=>{
+      const b=document.createElement('button');b.className='sb-link';b.dataset.sec=id;b.id=id==='pagebuilder'?'dev-modules-link':id+'-link';b.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> <span>'+text+'</span>';b.onclick=()=>goSec(id);nav.appendChild(b);
+    });
+    addDeveloperSections();
+  }
+  function addDeveloperSections(){
+    if(document.getElementById('sec-pagebuilder'))return;
+    const content=document.querySelector('.content');
+    const mk=(id,title,sub,body)=>{const d=document.createElement('div');d.id='sec-'+id;d.className='view-sec';d.innerHTML='<div class="card"><div class="card-hd"><div><h3>'+title+'</h3><p>'+sub+'</p></div></div><div class="card-bd">'+body+'</div></div>';content.appendChild(d);};
+    mk('pagebuilder','🧩 Page / Module Builder','Control visible admin modules and their order.','<div id="pagebuilder-body"><div class="empty-state"><div class="em">🧩</div><h4>Loading modules...</h4></div></div>');
+    mk('ai-engine','🤖 AI Customization Engine','Request-based customization queue with preview/approval record.','<div class="form-row"><label>Request</label><textarea id="ai-request" class="input" rows="5" placeholder="English ya Urdu mein request likhein..."></textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="submitAIRequest()">Generate Preview Request</button><button class="btn btn-outline" onclick="loadAIRequests()">Refresh</button></div><div id="ai-results" style="margin-top:16px;"></div>');
+    mk('call-audit','🎙️ Call Recording Audit Logs','Super Admin only — recordings metadata from wasaCallRecordings.','<div id="call-audit-body"><div class="empty-state"><div class="em">🔒</div><h4>Super Admin only</h4></div></div>');
+  }
+  window.submitAIRequest=async function(){if(!canSuper())return toast('Super Admin only','error');const req=document.getElementById('ai-request').value.trim();if(!req)return toast('Request likhein','warning');const ref=await db.collection('wasaSettings').collection('aiRequests').add({request:req,status:'pending',createdBy:me.name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});await audit('ai_customization_request','wasaSettings',ref.id,{request:req});document.getElementById('ai-request').value='';toast('Request queue mein save ho gayi. Preview engine backend se connect hone par generate hoga.','success');loadAIRequests();};
+  window.loadAIRequests=async function(){if(!canSuper())return;const el=document.getElementById('ai-results');if(!el)return;try{const snap=await db.collection('wasaSettings').collection('aiRequests').orderBy('createdAt','desc').limit(20).get();if(snap.empty){el.innerHTML='<div class="empty-state"><div class="em">🤖</div><h4>No requests</h4></div>';return;}el.innerHTML='<div style="display:grid;gap:8px;">'+snap.docs.map(d=>{const x=d.data();return '<div class="dup-side"><div class="dup-row"><span class="k">Request</span><span class="v">'+escapeHtml(x.request||'')+'</span></div><div class="dup-row"><span class="k">Status</span><span class="v">'+escapeHtml(x.status||'pending')+'</span></div><div class="dup-row"><span class="k">Created</span><span class="v">'+escapeHtml(safeTime(x.createdAt))+'</span></div></div>';}).join('')+'</div>';}catch(e){el.innerHTML='<div class="empty-state"><h4>'+escapeHtml(e.message)+'</h4></div>';}};
+  async function loadCallAudit(){const el=document.getElementById('call-audit-body');if(!el)return;if(!canSuper()){el.innerHTML='<div class="empty-state"><div class="em">🔒</div><h4>Super Admin only</h4></div>';return;}try{const snap=await db.collection('wasaCallRecordings').orderBy('createdAt','desc').limit(100).get();if(snap.empty){el.innerHTML='<div class="empty-state"><div class="em">🎙️</div><h4>No recordings found</h4></div>';return;}el.innerHTML='<div style="overflow:auto;"><table class="tbl"><thead><tr><th>Officer</th><th>Call</th><th>Recording</th><th>Time</th></tr></thead><tbody>'+snap.docs.map(d=>{const x=d.data();const url=x.url||x.recordingUrl||x.secure_url||'';return '<tr><td>'+escapeHtml(x.officerName||x.createdBy||'-')+'</td><td>'+escapeHtml(x.callId||x.id||'-')+'</td><td>'+(url?'<a href="'+escapeAttr(url)+'" target="_blank" rel="noopener">Open</a>':'-')+'</td><td>'+escapeHtml(safeTime(x.createdAt||x.timestamp))+'</td></tr>';}).join('')+'</tbody></table></div>';}catch(e){toast('Call audit: '+e.message,'error');}}
+
+  // Replace navigation with permission-aware navigation.
+  const oldGoSec=window.goSec;
+  window.goSec=function(name){
+    const restricted=['formbuilder','uploads','duplicates','corrections','branding','settings','pagebuilder','ai-engine','call-audit'];
+    if(restricted.includes(name) && !me)return toast('Login required','error');
+    if(['formbuilder','uploads','pagebuilder','ai-engine','call-audit','branding'].includes(name) && !canManageForms())return toast('Is module ke liye Admin access required','error');
+    if(name==='call-audit' && !canSuper())return toast('Call audit sirf Super Admin ke liye hai','error');
+    if(name==='activities' && !canReports())return toast('Reports access required','error');
+    oldGoSec(name);
+    if(name==='pagebuilder')loadPageBuilder();
+    if(name==='ai-engine')loadAIRequests();
+    if(name==='call-audit')loadCallAudit();
+  };
+
+  async function loadPageBuilder(){
+    const el=document.getElementById('pagebuilder-body');if(!el)return;
+    const defaultModules=['dashboard','consumers','pending','officers','activities','formbuilder','uploads','duplicates','corrections','settings'];
+    try{const d=await db.collection('wasaSettings').doc('main').get();const order=(d.exists&&Array.isArray(d.data().moduleOrder))?d.data().moduleOrder:defaultModules;el.innerHTML='<div style="display:grid;gap:8px;">'+order.map((x,i)=>'<div class="col-row"><span>☷</span><span class="col-name">'+escapeHtml(x)+'</span><button class="btn btn-outline btn-xs" onclick="moveModule('+i+',-1)">↑</button><button class="btn btn-outline btn-xs" onclick="moveModule('+i+',1)">↓</button></div>').join('')+'</div><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveModuleOrder()">Save Module Order</button>';window._moduleOrder=order.slice();}catch(e){toast('Page Builder: '+e.message,'error');}
+  }
+  window.moveModule=function(i,delta){if(!window._moduleOrder)return;const j=i+delta;if(j<0||j>=window._moduleOrder.length)return;[window._moduleOrder[i],window._moduleOrder[j]]=[window._moduleOrder[j],window._moduleOrder[i]];loadPageBuilder();};
+  window.saveModuleOrder=async function(){if(!canSuper())return toast('Super Admin only','error');await db.collection('wasaSettings').doc('main').set({moduleOrder:window._moduleOrder||[]},{merge:true});await audit('module_order_updated','wasaSettings','main',{moduleOrder:window._moduleOrder||[]});toast('Module order saved','success');};
+
+  // Secure officer management: no plaintext password viewing/export, hashed storage only.
+  window.loadOfficers=async function(){
+    try{
+      const snap=await db.collection('wasaUsers').get();
+      const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>String(u.role||'').toLowerCase()!=='superadmin');
+      const tb=document.getElementById('officers-tbody');
+      if(!rows.length){tb.innerHTML='<tr><td colspan="6" class="empty-state"><div class="em">👥</div><h4>No officers</h4></td></tr>';return;}
+      tb.innerHTML=rows.map(u=>{const bc=u.status==='active'?'b-succ':u.status==='pending'?'b-warn':'b-dang';const av=u.photoUrl?'<img src="'+escapeAttr(u.photoUrl)+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">':'<div style="width:36px;height:36px;border-radius:50%;background:var(--p500);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;">'+escapeHtml((u.name||'?').charAt(0).toUpperCase())+'</div>';const actions=canWrite()?'<button class="btn btn-outline btn-xs" onclick="openOfficerEditModal(\''+u.id+'\')"><i class="fa-solid fa-pen"></i> Edit</button> <button class="btn btn-danger btn-xs" onclick="deleteOfficer(\''+u.id+'\',\''+escapeAttr(u.name||'')+'\')"><i class="fa-solid fa-trash"></i></button>':'<button class="btn btn-outline btn-xs" onclick="viewOfficerSafe(\''+u.id+'\')"><i class="fa-solid fa-eye"></i> View</button>';return '<tr><td>'+av+'</td><td><strong>'+escapeHtml(u.name||'-')+'</strong></td><td>'+escapeHtml(formatPhone(u.phone||'-'))+'</td><td><span class="badge b-info">'+escapeHtml(roleLabel(u.role||u.designation))+'</span></td><td><span class="badge '+bc+'">'+escapeHtml(u.status||'-')+'</span></td><td style="text-align:right;white-space:nowrap;">'+actions+'</td></tr>';}).join('');
+    }catch(e){toast('Officers: '+e.message,'error');}
+  };
+  window.viewPassword=()=>toast('Passwords are never displayed.','warning');
+  window.viewOfficerSafe=async function(id){const d=await db.collection('wasaUsers').doc(id).get();if(!d.exists)return toast('Not found','error');const u=d.data();document.getElementById('dm-title').textContent='Officer Details';document.getElementById('dm-body').innerHTML='<div class="dup-side"><div class="dup-row"><span class="k">Name</span><span class="v">'+escapeHtml(u.name||'-')+'</span></div><div class="dup-row"><span class="k">Phone</span><span class="v">'+escapeHtml(formatPhone(u.phone||'-'))+'</span></div><div class="dup-row"><span class="k">CNIC</span><span class="v">'+escapeHtml(formatCNIC(u.cnic||'-'))+'</span></div><div class="dup-row"><span class="k">Role</span><span class="v">'+escapeHtml(roleLabel(u.role))+'</span></div><div class="dup-row"><span class="k">Designation</span><span class="v">'+escapeHtml(u.designation||'-')+'</span></div><div class="dup-row"><span class="k">Status</span><span class="v">'+escapeHtml(u.status||'-')+'</span></div></div>';document.getElementById('dm-footer').innerHTML='<button class="btn btn-outline btn-sm" onclick="closeModal(\'detail-modal\')">Close</button>';openModal('detail-modal');};
+  window.saveOfficerEdit=async function(){
+    if(!canWrite())return toast('Admin access required','error');
+    const name=document.getElementById('om-name').value.trim(), phone=normalizePhone(document.getElementById('om-phone').value), cnic=normalizeCNIC(document.getElementById('om-cnic').value), desig=document.getElementById('om-desig').value.trim(), role=document.getElementById('om-role').value, status=document.getElementById('om-status').value, pass=document.getElementById('om-pass').value.trim();
+    if(!name||phone.length!==11)return toast('Name aur 11-digit phone required','warning');
+    if(role==='superadmin')return toast('Super Admin ko directory se create nahi kiya ja sakta','error');
+    if(pass && pass.length<10)return toast('New password minimum 10 characters','warning');
+    let photoUrl=null;
+    if(officerPhotoBlob){try{const fd=new FormData();fd.append('file',officerPhotoBlob);fd.append('upload_preset',cloudinaryConfig.uploadPreset);const res=await fetch('https://api.cloudinary.com/v1_1/'+cloudinaryConfig.cloudName+'/image/upload',{method:'POST',body:fd});const j=await res.json();if(!j.secure_url)throw new Error(j.error&&j.error.message||'Upload failed');photoUrl=j.secure_url;}catch(e){return toast('Photo upload failed: '+e.message,'error');}}
+    try{
+      if(editingOfficerId){const update={name,phone,cnic,designation:desig,role,status,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:me.name};if(pass){update.passwordHash=await sha256(pass);update.passwordUpdatedAt=firebase.firestore.FieldValue.serverTimestamp();update.passHash=firebase.firestore.FieldValue.delete();}if(photoUrl)update.photoUrl=photoUrl;await db.collection('wasaUsers').doc(editingOfficerId).update(update);await audit('officer_updated','wasaUsers',editingOfficerId,{name,phone,role,status,passwordChanged:!!pass});toast('Officer updated','success');
+      }else{
+        if(pass.length<10)return toast('New officer ke liye password required hai (10+ chars)','warning');const exists=await db.collection('wasaUsers').where('phone','==',phone).limit(1).get();if(!exists.empty)return toast('Phone already exists','error');const doc={name,phone,cnic,designation:desig,role,status,passwordHash:await sha256(pass),createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:me.name};if(photoUrl)doc.photoUrl=photoUrl;const ref=await db.collection('wasaUsers').add(doc);await audit('officer_created','wasaUsers',ref.id,{name,phone,role,status});toast('Officer created','success');
+      }
+      closeModal('officer-modal');officerPhotoBlob=null;loadOfficers();
+    }catch(e){toast('Save officer: '+e.message,'error');}
+  };
+  window.deleteOfficer=async function(id,name){if(!canWrite())return toast('Admin access required','error');if(!confirm('Delete '+name+'? This cannot be undone.'))return;try{await db.collection('wasaUsers').doc(id).delete();await audit('officer_deleted','wasaUsers',id,{name});toast('Officer deleted','success');loadOfficers();}catch(e){toast('Delete: '+e.message,'error');}};
+  window.exportOfficersXL=async function(){if(!canReports())return toast('Reports access required','error');const snap=await db.collection('wasaUsers').get();const rows=snap.docs.map(d=>d.data()).filter(u=>String(u.role||'').toLowerCase()!=='superadmin').map(u=>({Name:u.name||'',Phone:formatPhone(u.phone||''),CNIC:formatCNIC(u.cnic||''),Role:roleLabel(u.role),Designation:u.designation||'',Status:u.status||''}));const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Officers');XLSX.writeFile(wb,'WASA_Officers.xlsx');await audit('officer_export','wasaUsers','',{rows:rows.length});toast('Excel ready — passwords export nahi hote.','success');};
+
+  // Super Admin is the only account allowed to delete field activities.
+  window.deleteActivity=async function(id){if(!canSuper())return toast('Field Activity delete sirf Super Admin kar sakta hai','error');if(!confirm('Field Activity permanently delete karni hai?'))return;try{await db.collection('wasaActivities').doc(id).delete();await audit('activity_deleted','wasaActivities',id,{});toast('Activity deleted','success');loadActivities();}catch(e){toast('Delete activity: '+e.message,'error');}};
+  window.exportActivitiesXL=async function(){if(!canReports())return toast('Reports access required','error');if(!window._lastActivities||!window._lastActivities.length)return toast('No data','warning');const rows=window._lastActivities.map(r=>{const o={Time:safeTime(r.timestamp),Officer:r.officerName||'',Phone:formatPhone(r.officerPhone||''),Type:r.activityType||'',Amount:r.amount||0,PhotoURL:r.photoUrl||''};if(r.values)Object.keys(r.values).forEach(k=>o[k]=r.values[k]);return o;});const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Activities');XLSX.writeFile(wb,'WASA_Activities.xlsx');await audit('activity_export','wasaActivities','',{rows:rows.length});toast('Activities Excel ready','success');};
+
+  // Consumer edits/deletes are Admin+ only; deletion requires password re-entry.
+  window.editRow=function(idx){if(!canWrite())return toast('Admin access required','error');const r=window._lastResults[idx];editingRow={collection:CONSUMER_COLLECTION,id:r._id,data:{...r}};const container=document.getElementById('er-fields-container');container.innerHTML=window._lastColumns.map(c=>'<div class="form-row"><label>'+escapeHtml(c)+'</label><input type="text" class="input" data-col="'+escapeAttr(c)+'" value="'+escapeAttr(String(r[c]||''))+'"></div>').join('');openModal('edit-row-modal');};
+  window.saveEditedRow=async function(){if(!canWrite())return toast('Admin access required','error');if(!editingRow)return;const updates={};document.querySelectorAll('#er-fields-container [data-col]').forEach(inp=>updates[inp.dataset.col]=inp.value);try{await db.collection(CONSUMER_COLLECTION).doc(editingRow.id).update({...updates,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:me.name});await audit('consumer_updated',CONSUMER_COLLECTION,editingRow.id,{fields:Object.keys(updates)});toast('Consumer updated','success');closeModal('edit-row-modal');const rec=consumersCache.find(x=>x._id===editingRow.id);if(rec)Object.assign(rec,updates);renderConsumersResults();}catch(e){toast('Update: '+e.message,'error');}};
+  window.deleteRow=async function(idx){if(!canWrite())return toast('Admin access required','error');const r=window._lastResults[idx];const pass=prompt('Security check: apna current Admin password enter karein:')||'';if(!pass)return;try{const ph=await sha256(pass);let ok=false;if(canSuper() && ph===HASHED_SUPER)ok=true;else{const snap=await db.collection('wasaUsers').doc(me.id).get();const u=snap.data()||{};ok=(u.passwordHash===ph)||(u.passHash===pass);}if(!ok)return toast('Password verification failed','error');if(!confirm('Consumer permanently delete karna hai?'))return;await db.collection(CONSUMER_COLLECTION).doc(r._id).delete();await audit('consumer_deleted',CONSUMER_COLLECTION,r._id,{consumerNo:r.CONSUMER_NO||''});consumersCache=consumersCache.filter(x=>x._id!==r._id);renderConsumersResults();toast('Consumer deleted','success');}catch(e){toast('Delete: '+e.message,'error');}};
+  window.saveNewConsumer=async function(){if(!canWrite())return toast('Admin access required','error');const rec={};document.querySelectorAll('#ac-fields-container [data-col]').forEach(inp=>rec[inp.dataset.col]=inp.value.trim());if(!Object.values(rec).some(v=>v))return toast('Fill at least one field','warning');rec._createdAt=firebase.firestore.FieldValue.serverTimestamp();rec._createdBy=me.name;try{const ref=await db.collection(CONSUMER_COLLECTION).add(rec);await audit('consumer_created',CONSUMER_COLLECTION,ref.id,{consumerNo:rec.CONSUMER_NO||''});toast('Consumer added','success');closeModal('add-consumer-modal');if(consumersCache)consumersCache.push({_id:ref.id,...rec});renderConsumersResults();}catch(e){toast('Create: '+e.message,'error');}};
+
+  // Correct collection + audit for correction decisions.
+  window.approveReq=async function(id,name){if(!canWrite())return toast('Admin access required','error');try{await db.collection('wasaUsers').doc(id).update({status:'active',approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:me.name});await audit('officer_approved','wasaUsers',id,{name});toast(name+' approved','success');loadPending();loadOfficers();}catch(e){toast('Approve: '+e.message,'error');}};
+  window.rejectReq=async function(id){if(!canWrite())return toast('Admin access required','error');if(!confirm('Request reject/delete karni hai?'))return;try{await db.collection('wasaUsers').doc(id).update({status:'rejected',rejectedAt:firebase.firestore.FieldValue.serverTimestamp(),rejectedBy:me.name});await audit('officer_request_rejected','wasaUsers',id,{});toast('Request rejected','info');loadPending();}catch(e){toast('Reject: '+e.message,'error');}};
+  window.approveCorrEdited=async function(id){if(!canWrite())return toast('Admin access required','error');try{const cdoc=await db.collection(CORRECTION_COLLECTION).doc(id).get();if(!cdoc.exists)return toast('Request not found','error');const c=cdoc.data();const inputs=document.querySelectorAll('input[data-corr-id="'+id+'"]');const update={},finalChanges={};inputs.forEach(inp=>{const field=inp.dataset.field,newVal=inp.value.trim(),oldVal=c.changes&&c.changes[field]?c.changes[field].old:'';update[field]=newVal;finalChanges[field]={old:oldVal,new:newVal,adminEdited:true};});if(!Object.keys(update).length)return toast('No fields','warning');await db.collection(c.targetCollection||CONSUMER_COLLECTION).doc(c.targetId).update({...update,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:me.name});await db.collection(CORRECTION_COLLECTION).doc(id).update({status:'approved',changes:finalChanges,approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:me.name});await audit('correction_approved',CORRECTION_COLLECTION,id,{targetId:c.targetId,fields:Object.keys(update)});toast('Correction applied','success');loadCorrections();}catch(e){toast('Correction: '+e.message,'error');}};
+  window.rejectCorr=async function(id){if(!canWrite())return toast('Admin access required','error');if(!confirm('Correction reject karni hai?'))return;try{await db.collection(CORRECTION_COLLECTION).doc(id).update({status:'rejected',rejectedAt:firebase.firestore.FieldValue.serverTimestamp(),rejectedBy:me.name});await audit('correction_rejected',CORRECTION_COLLECTION,id,{});toast('Rejected','info');loadCorrections();}catch(e){toast('Reject: '+e.message,'error');}};
+
+  // Bulk upload: Admin only, chunked commits, duplicate inbox, no password exposure.
+  window.startBulkUpload=async function(){
+    if(!canWrite())return toast('Admin access required','error');
+    if(!uploadedRows.length)return toast('No data','warning');
+    const target=document.getElementById('upl-target').value;
+    const dupCol=document.getElementById('upl-dup-col').value.trim();
+    if(target!==CONSUMER_COLLECTION && target!=='wasaActivities')return toast('Invalid target','error');
+    if(!dupCol || !uploadedHeaders.includes(dupCol))return toast('Duplicate column file mein nahi hai','warning');
+    const btn=document.getElementById('upl-start-btn');btn.disabled=true;document.getElementById('upl-progress-wrap').style.display='block';
+    const pText=document.getElementById('upl-progress-text'),pBar=document.getElementById('upl-progress');
+    try{
+      pText.textContent='Checking existing records...';pBar.style.width='5%';
+      let existingKeys=new Set();
+      if(target===CONSUMER_COLLECTION){
+        const existing=await db.collection(target).get();existing.forEach(d=>{const v=d.data()[dupCol];if(v!==undefined&&v!==null&&String(v).trim())existingKeys.add(String(v).trim().toLowerCase());});
+      }
+      const CHUNK=400,total=uploadedRows.length;let uploaded=0,dup=0,failed=0;const dupList=[];
+      for(let i=0;i<total;i+=CHUNK){const slice=uploadedRows.slice(i,i+CHUNK);const batch=db.batch();let n=0;for(const row of slice){const key=String(row[dupCol]||'').trim().toLowerCase();if(target===CONSUMER_COLLECTION && key && existingKeys.has(key)){dup++;if(dupList.length<1000)dupList.push({column:dupCol,key,data:row,source:'bulk_upload',createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:me.name});continue;}if(key)existingKeys.add(key);const ref=db.collection(target).doc();batch.set(ref,{...row,_uploadedAt:firebase.firestore.FieldValue.serverTimestamp(),_uploadedBy:me.name});n++;}if(n){try{await batch.commit();uploaded+=n;}catch(e){failed+=n;throw e;}}const done=Math.min(i+CHUNK,total);const pct=Math.round(done/total*100);pBar.style.width=pct+'%';pText.textContent=pct+'% • '+done.toLocaleString()+'/'+total.toLocaleString()+' • New '+uploaded.toLocaleString()+' • Duplicates '+dup.toLocaleString();}
+      for(let i=0;i<dupList.length;i+=400){const b=db.batch();dupList.slice(i,i+400).forEach(d=>b.set(db.collection('wasaDuplicates').doc(),d));if(dupList.length)await b.commit();}
+      await audit('bulk_upload',target,'',{rows:total,uploaded,duplicates:dup,failed});pBar.style.width='100%';pText.textContent='DONE • New '+uploaded+' • Duplicates '+dup+' • Failed '+failed;consumersCache=null;toast('Bulk upload complete','success');
+    }catch(e){toast('Bulk upload: '+e.message,'error');}finally{btn.disabled=false;}
+  };
+
+  // Dashboard chart + KPI correctness. Chart is created only after Chart.js loads.
+  let dashChart=null;
+  function ensureDashboardChart(){
+    const grid=document.querySelector('#sec-dashboard .dash-grid');if(!grid||document.getElementById('dash-chart-card'))return;
+    const card=document.createElement('div');card.id='dash-chart-card';card.className='card';card.innerHTML='<div class="card-hd"><div><h3>📈 Activity Trends</h3><p>Daily activity count from loaded records</p></div><select id="dash-chart-range" class="input" style="width:auto;padding:6px 10px" onchange="renderDashboardChart()"><option value="7">7 Days</option><option value="30" selected>30 Days</option></select></div><div class="card-bd"><div style="height:300px"><canvas id="dash-chart"></canvas></div></div>';grid.parentNode.insertBefore(card,grid.nextSibling);
+  }
+  window.renderDashboardChart=function(){
+    if(typeof Chart==='undefined')return;ensureDashboardChart();const days=Number(document.getElementById('dash-chart-range')?.value||30), now=new Date(),labels=[],counts=[];for(let i=days-1;i>=0;i--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-i);labels.push(d.toLocaleDateString(undefined,{month:'short',day:'numeric'}));counts.push(0);}const acts=window._dashActivities||[];acts.forEach(a=>{let dt=null;if(a.timestamp?.toDate)dt=a.timestamp.toDate();else if(a.timestamp?.seconds)dt=new Date(a.timestamp.seconds*1000);if(!dt)return;const diff=Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate())-new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()))/86400000);if(diff>=0&&diff<days)counts[days-1-diff]++;});const ctx=document.getElementById('dash-chart');if(!ctx)return;if(dashChart)dashChart.destroy();dashChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Activities',data:counts,tension:.25,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+  };
+  const oldRenderDashboardCards=window.renderDashboardCards;
+  window.renderDashboardCards=function(){oldRenderDashboardCards();ensureDashboardChart();renderDashboardChart();};
+
+  // Consumers collection + scalability note: render only a small window; more loads on scroll.
+  const oldReloadConsumers=window.reloadConsumers;
+  window.reloadConsumers=async function(){if(!canReports())return toast('Consumers access required','error');await oldReloadConsumers();if(consumersCache){window._consumerWindow=300;attachConsumerWindowing();}};
+  function attachConsumerWindowing(){const sc=document.querySelector('#results-scroll-inner');if(!sc||sc.dataset.windowing)return;sc.dataset.windowing='1';sc.addEventListener('scroll',()=>{if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-200 && window._lastResults && window._consumerWindow<window._lastResults.length){window._consumerWindow=Math.min(window._consumerWindow+300,window._lastResults.length);renderConsumersResults();}});}
+  const oldRenderConsumersResults=window.renderConsumersResults;
+  window.renderConsumersResults=function(){oldRenderConsumersResults();};
+
+  // Apply session and setup after page loads.
+  const oldEnterApp=window.enterApp;
+  window.enterApp=function(){oldEnterApp();attachDeveloperUnlock();applyRoleUI();};
+  window.applyRoleUI=function(){
+    const manager=me&&String(me.role||'').toLowerCase()==='manager',superA=canSuper();
+    document.querySelectorAll('.sb-link').forEach(b=>{const sec=b.dataset.sec;if(manager && ['formbuilder','uploads','duplicates','corrections','branding','settings'].includes(sec))b.style.display='none';});
+    const activityBtn=document.querySelector('[data-sec="activities"]');if(activityBtn)activityBtn.style.display=canReports()?'flex':'none';
+    const consumerBtn=document.querySelector('[data-sec="consumers"]');if(consumerBtn)consumerBtn.style.display=canReports()?'flex':'none';
+    if(document.getElementById('new-super-pass'))document.getElementById('new-super-pass').disabled=!superA;
+  };
+  const oldLogout=window.doLogout;
+  window.doLogout=function(){sessionStorage.removeItem(SESSION_KEY);oldLogout();};
+  window.changeSuperPassword=async function(){if(!canSuper())return toast('Super Admin only','error');const np=document.getElementById('new-super-pass').value.trim();if(np.length<12)return toast('Super password minimum 12 characters','warning');try{const passwordHash=await sha256(np);await db.collection('wasaSettings').doc('super').set({passwordHash,pass:firebase.firestore.FieldValue.delete(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:me.name},{merge:true});await audit('super_password_changed','wasaSettings','super',{});document.getElementById('new-super-pass').value='';toast('Super Admin password hash update ho gaya','success');}catch(e){toast('Password update: '+e.message,'error');}};
+  window.unlockDevMode=async function(){const k=document.getElementById('dev-key').value.trim();if((await sha256(k))===HASHED_DEV){unlockDeveloperModules();document.getElementById('dev-key').value='';toast('Developer mode unlocked','success');}else toast('Invalid developer password','error');};
+
+  // Hidden footer and setup button are attached without changing the main layout.
+  window.addEventListener('DOMContentLoaded',()=>{ensureSetupButton();attachDeveloperUnlock();setTimeout(()=>{if(typeof applySettingsToUI==='function')applySettingsToUI();},200);});
+})();
+</script>
+
+</body>
+</html>
