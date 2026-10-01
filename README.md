@@ -1,1 +1,0 @@
-# wasa-kasur-app
