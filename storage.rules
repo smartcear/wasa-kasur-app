@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+
+    function me() {
+      return signedIn()
+        ? firestore.get(/databases/(default)/documents/wasaUsers/$(request.auth.uid)).data
+        : null;
+    }
+
+    function superAdmin() { return signedIn() && me() != null && me().role == "superadmin"; }
+    function admin() { return superAdmin() || (signedIn() && me() != null && me().role == "admin"); }
+    function management() { return signedIn() && me() != null && me().role == "management"; }
+    function officer() { return signedIn() && me() != null && (me().role == "officer" || me().role == "field_officer"); }
+
+    match /wasa-bills/{batchId}/{fileName=**} {
+      allow read: if superAdmin() || admin() || management();
+      allow write: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasa-consumer-media/{uid}/{fileName=**} {
+      allow read: if superAdmin() || admin() || management() ||
+        (signedIn() && request.auth.uid == uid);
+      allow write: if admin() || (signedIn() && request.auth.uid == uid && officer());
+      allow delete: if admin() || (signedIn() && request.auth.uid == uid);
+    }
+
+    match /wasa-call-recordings/{fileName=**} {
+      allow read: if superAdmin();
+      allow write: if signedIn();
+      allow delete: if superAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

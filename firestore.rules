@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return signedIn()
+        ? get(/databases/$(database)/documents/wasaUsers/$(request.auth.uid)).data
+        : null;
+    }
+
+    function isRole(r) {
+      return signedIn() && me() != null && me().role == r;
+    }
+
+    function superAdmin() { return isRole("superadmin"); }
+    function admin() { return superAdmin() || isRole("admin"); }
+    function management() { return isRole("management"); }
+    function officer() { return isRole("officer") || isRole("field_officer"); }
+
+    match /wasaUsers/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || admin() || management());
+      allow create: if superAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.role == "officer");
+      allow update: if superAdmin() ||
+        (admin() && resource.data.role != "superadmin" && request.resource.data.role != "superadmin") ||
+        (signedIn() && request.auth.uid == uid &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(["displayName","phone","photoURL","darkMode","lastSeen"]));
+      allow delete: if superAdmin() || (admin() && resource.data.role != "superadmin");
+    }
+
+    match /wasaConsumers/{id} {
+      allow read: if signedIn();
+      allow create, update: if admin() || officer();
+      allow delete: if admin();
+    }
+
+    match /wasaActivities/{id} {
+      allow read, create: if signedIn();
+      allow update: if superAdmin() || admin() ||
+        (officer() && resource.data.officerId == request.auth.uid && resource.data.status == "pending");
+      allow delete: if superAdmin();
+    }
+
+    match /wasaActivityTypes/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+
+    match /wasaCorrectionRequests/{id} {
+      allow create: if signedIn();
+      allow read, update: if superAdmin() || admin() || management() ||
+        (officer() && resource.data.officerId == request.auth.uid);
+      allow delete: if admin();
+    }
+
+    match /wasaPendingRequests/{id} {
+      allow create: if signedIn();
+      allow read, update: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasaDuplicates/{id} {
+      allow read: if superAdmin() || admin() || management();
+      allow create, update: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasaNotifications/{id} {
+      allow read, update: if signedIn() &&
+        (resource.data.userId == request.auth.uid || admin());
+      allow create: if admin();
+      allow delete: if admin();
+    }
+
+    match /wasaSettings/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+
+    match /wasaAuditLog/{id} {
+      allow read: if admin();
+      allow create: if signedIn();
+      allow update, delete: if superAdmin();
+    }
+
+    match /wasaPasswordResets/{id} {
+      allow create: if signedIn();
+      allow read, update: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasaBillBatches/{id} {
+      allow read: if superAdmin() || admin() || management();
+      allow create, update: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasaConsumerBills/{id} {
+      allow read: if superAdmin() || admin() || management();
+      allow create, update: if admin();
+      allow delete: if superAdmin();
+    }
+
+    match /wasaChats/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if admin();
+    }
+
+    match /wasaMessages/{id} {
+      allow read, create: if signedIn();
+      allow update, delete: if admin() ||
+        (signedIn() && resource.data.senderId == request.auth.uid);
+    }
+
+    match /wasaCalls/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if admin();
+    }
+
+    match /wasaCallRecordings/{id} {
+      allow read: if superAdmin();
+      allow create: if signedIn();
+      allow update, delete: if superAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
