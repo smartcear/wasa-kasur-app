@@ -1,7 +1,7 @@
 /* WASA Kasur Enterprise PWA Service Worker
-   Version: 5.4.0-financial-analytics
+   Version: 5.3.0-final
 */
-const CACHE_VERSION = 'wasa-kasur-v5.4.0-financial-analytics';
+const CACHE_VERSION = 'wasa-kasur-v5.3.0-final';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

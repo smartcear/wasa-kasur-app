@@ -502,7 +502,7 @@
   let me=null, sections=[];
   const SUPER_PHONE='03015777523';
   const SUPER_EMAIL='wasanafees@gmail.com';
-  const SUPER_UID=''; // Set this to the new Firebase Auth UID after initial Super Admin provisioning for an extra account pin
+  const SUPER_UID='3YpalWrECEYXwQCjl1FZo6NSEil1';
   const SUPER_HASH='58557a1140502a0aad5049959f644447243d585ea50cff9daea3d6c3085e9cc3';
   const DB_NAME='wasaOfficerOffline';
   const DB_VERSION=1;
@@ -566,7 +566,7 @@
   function getProvisionerAuth(){if(!authProvisioner){const app=firebase.apps.find(a=>a.name==='officerProvisioner')||firebase.initializeApp(firebaseConfig,'officerProvisioner');authProvisioner=app.auth();}return authProvisioner;}
   async function doLogin(e){e.preventDefault();const phone=normalizePhone(document.getElementById('l-phone').value);const pass=document.getElementById('l-pass').value;const btn=document.getElementById('l-btn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
     try{
-      if(phone===SUPER_PHONE){const user=(await auth.signInWithEmailAndPassword(SUPER_EMAIL,pass)).user;if(SUPER_UID && user.uid!==SUPER_UID)return toast('Invalid Super Admin account','error');const d=await db.collection('wasaUsers').doc(user.uid).get();me=d.exists?{id:d.id,...d.data()}:{id:user.uid,name:'Super Admin',phone,role:'superadmin',designation:'System Owner',status:'active'};enterApp();return;}
+      if(phone===SUPER_PHONE){const user=(await auth.signInWithEmailAndPassword(SUPER_EMAIL,pass)).user;if(user.uid!==SUPER_UID)return toast('Invalid Super Admin account','error');const d=await db.collection('wasaUsers').doc(user.uid).get();me=d.exists?{id:d.id,...d.data()}:{id:user.uid,name:'Super Admin',phone,role:'superadmin',designation:'System Owner',status:'active'};enterApp();return;}
       const email=authEmailForPhone(phone);let user=null;
       try{user=(await auth.signInWithEmailAndPassword(email,pass)).user;}catch(authErr){
         // One-time migration for an older Firestore-only account. This branch is only needed while the database is still in migration mode.
