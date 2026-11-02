@@ -1,0 +1,153 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/wasaUsers/$(request.auth.uid));
+    }
+
+    function hasProfile() {
+      return signedIn() && userDoc().exists;
+    }
+
+    function roleIs(roleName) {
+      return hasProfile() && userDoc().data.status == 'active' && userDoc().data.role == roleName;
+    }
+
+    function superAdmin() {
+      return roleIs('superadmin');
+    }
+
+    function admin() {
+      return superAdmin() || roleIs('admin');
+    }
+
+    function manager() {
+      return admin() || roleIs('manager');
+    }
+
+    function activeUser() {
+      return hasProfile() &&
+        userDoc().data.status == 'active' &&
+        userDoc().data.role in ['officer', 'manager', 'admin', 'superadmin'];
+    }
+
+    // User profiles
+    match /wasaUsers/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+
+      // Self-registration can create ONLY a pending officer profile.
+      // Admin/manager/superadmin profiles must be provisioned by an administrator.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'officer'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.canDownloadBills == false
+        && request.resource.data.canDownloadConsumerData == false
+        && request.resource.data.canExportReports == false;
+
+      allow update: if admin()
+        || (signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['name', 'photoUrl', 'gender', 'updatedAt']));
+
+      allow delete: if admin() && uid != request.auth.uid;
+    }
+
+    // Shared app configuration
+    match /wasaSettings/{doc} {
+      allow read: if activeUser();
+      allow write: if admin();
+    }
+
+    match /wasaZones/{doc} {
+      allow read: if activeUser();
+      allow write: if admin();
+    }
+
+    match /wasaAreas/{doc} {
+      allow read: if activeUser();
+      allow write: if admin();
+    }
+
+    match /wasaActivityTypes/{doc} {
+      allow read: if activeUser();
+      allow write: if admin();
+    }
+
+    // Field officer activity submissions
+    match /wasaActivities/{doc} {
+      allow read: if manager()
+        || (activeUser() && resource.data.officerUid == request.auth.uid);
+
+      allow create: if activeUser()
+        && (manager() || request.resource.data.officerUid == request.auth.uid);
+
+      allow update: if manager()
+        || (activeUser()
+          && resource.data.officerUid == request.auth.uid
+          && request.resource.data.officerUid == resource.data.officerUid);
+
+      allow delete: if admin();
+    }
+
+    // Admin dashboard's imported consumer master
+    match /wasaBulkData/{doc} {
+      allow read, create, update, delete: if admin();
+    }
+
+    // Officer app's consumer lookup data
+    match /wasaConsumers/{doc} {
+      allow read: if activeUser();
+      allow create, update, delete: if admin();
+    }
+
+    // Officer correction requests
+    match /wasaCorrectionRequests/{doc} {
+      allow create: if activeUser()
+        && request.resource.data.officerUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow read, update: if manager();
+      allow delete: if admin();
+    }
+
+    // Admin-managed correction queue used by the admin dashboard
+    match /wasaCorrections/{doc} {
+      allow read, create, update, delete: if manager();
+    }
+
+    // Officer download permissions: users can read only their own permission record.
+    match /wasaDownloadPermissions/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create, update, delete: if admin();
+    }
+
+    // Password reset requests. Creation is allowed before login, but only
+    // with the limited fields used by the app. Only admins can inspect/manage them.
+    match /wasaPasswordResets/{doc} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'userId', 'name', 'phone', 'cnic',
+          'requestedNewPassHash', 'status', 'createdAt'
+        ])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requestedNewPassHash is string
+        && request.resource.data.requestedNewPassHash.size() == 64;
+
+      allow read, update, delete: if admin();
+    }
+
+    // No other collections are accessible unless explicitly added above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
