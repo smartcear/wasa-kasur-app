@@ -1,0 +1,26 @@
+{
+    "short_name": "WASA Officer",
+    "name": "WASA Pakistan — Field Officer Digital App",
+    "icons": [
+      {
+        "src": "https://cdn-icons-png.flaticon.com/512/3105/3105807.png",
+        "type": "image/png",
+        "sizes": "192x192",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "https://cdn-icons-png.flaticon.com/512/3105/3105807.png",
+        "type": "image/png",
+        "sizes": "512x512",
+        "purpose": "any maskable"
+      }
+    ],
+    "start_url": "./officer-app.html",
+    "background_color": "#1A56DB",
+    "theme_color": "#1A56DB",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "./",
+    "description": "WASA Pakistan Enterprise Digital Management System for Field Officers",
+    "categories": ["business", "utilities", "productivity"]
+  }
